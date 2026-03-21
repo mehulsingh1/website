@@ -20,19 +20,19 @@ const DEFAULT_SCENES = [
 export default function Architect() {
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   // 3 Steps: 1 (Scenes), 2 (Generate), 3 (Export)
   const [step, setStep] = useState(1)
-  
+
   // State
   const [topic, setTopic] = useState(location.state?.topic || 'Untitled Project')
   const [scenes, setScenes] = useState(location.state?.scenes || DEFAULT_SCENES)
   const [activeSceneId, setActiveSceneId] = useState(scenes[0]?.id || 1)
-  
+
   // Generation state
   const [genPhase, setGenPhase] = useState('idle') // idle, rendering, compositing, done
   const [renderProgress, setRenderProgress] = useState(0)
-  
+
   // Export state
   const [saved, setSaved] = useState(false)
 
@@ -104,20 +104,20 @@ export default function Architect() {
 
         <div className="storyboard-list" style={{ overflowY: 'auto', flex: 1, padding: '0 16px 20px' }}>
           {scenes.map((scene, idx) => (
-            <div 
-              key={scene.id} 
+            <div
+              key={scene.id}
               className={`story-card ${activeSceneId === scene.id ? 'active' : ''}`}
               onClick={() => setActiveSceneId(scene.id)}
             >
               <div className="story-card-header">
                 <span className="sc-num">SCENE {idx + 1}</span>
               </div>
-              
+
               <div className="story-card-thumb">
-                 <Clapperboard size={24} className="thumb-icon" />
+                <Clapperboard size={24} className="thumb-icon" />
               </div>
 
-              <textarea 
+              <textarea
                 className="story-prompt-input"
                 value={scene.description}
                 onChange={(e) => updateScene(scene.id, { description: e.target.value })}
@@ -147,67 +147,67 @@ export default function Architect() {
             <h1 className="proj-title">{topic}</h1>
             <span className="auto-save-badge"><span className="dot"></span> AUTO-SAVING</span>
           </div>
-          
+
           <div className="canvas-actions">
-             <button className="icon-btn"><RotateCw size={16} /></button>
-             <button className="btn-export">
-               <Download size={16} /> Export Video
-             </button>
+            <button className="icon-btn"><RotateCw size={16} /></button>
+            <button className="btn-export">
+              <Download size={16} /> Export Video
+            </button>
           </div>
         </header>
 
         <div className="canvas-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 32px' }}>
-          
+
           {/* Main Video Player Area */}
           <div className="video-preview-box">
-             <div className="video-placeholder-bg"></div>
-             
-             {/* Big Play Button Overlay */}
-             <button className="big-play-btn">
-               <Play size={32} fill="currentColor" />
-             </button>
-             
-             {/* Player Controls Overlay */}
-             <div className="v-controls">
-               <span className="timecode">00:00:00:00</span>
-               <button className="v-fullscreen"><MoveHorizontal size={14} /></button>
-             </div>
+            <div className="video-placeholder-bg"></div>
+
+            {/* Big Play Button Overlay */}
+            <button className="big-play-btn">
+              <Play size={32} fill="currentColor" />
+            </button>
+
+            {/* Player Controls Overlay */}
+            <div className="v-controls">
+              <span className="timecode">00:00:00:00</span>
+              <button className="v-fullscreen"><MoveHorizontal size={14} /></button>
+            </div>
           </div>
 
           {/* Timeline Editor */}
           <div className="timeline-editor">
-            
+
             <div className="tl-toolbar">
               <div className="tl-play-group">
-                 <button className="btn-play-small"><Play size={14} fill="currentColor" /></button>
-                 <span className="tl-time">00:00:00:00</span>
+                <button className="btn-play-small"><Play size={14} fill="currentColor" /></button>
+                <span className="tl-time">00:00:00:00</span>
               </div>
               <div className="tl-tabs">
-                <button className="tab active"><Video size={12}/> VIDEO</button>
-                <button className="tab"><Speaker size={12}/> AUDIO</button>
+                <button className="tab active"><Video size={12} /> VIDEO</button>
+                <button className="tab"><Speaker size={12} /> AUDIO</button>
               </div>
             </div>
 
             {/* Timestamps */}
             <div className="tl-ruler">
-               {['00:00', '00:01', '00:02', '00:03', '00:04', '00:05', '00:06', '00:07', '00:08', '00:09', '00:010', '00:011', '00:012', '00:013', '00:014', '00:015', '00:016', '00:017'].map(t => (
-                 <span key={t} className="tick">{t}</span>
-               ))}
+              {['00:00', '00:01', '00:02', '00:03', '00:04', '00:05', '00:06', '00:07', '00:08', '00:09', '00:010', '00:011', '00:012', '00:013', '00:014', '00:015', '00:016', '00:017'].map(t => (
+                <span key={t} className="tick">{t}</span>
+              ))}
             </div>
 
             {/* Tracks */}
             <div className="tl-tracks">
-               <div className="tl-track tl-visual-track">
-                 <div className="tl-block block-visual" style={{ width: '40%' }}>
-                   <span>S1_VISUAL</span>
-                 </div>
-               </div>
-               
-               <div className="tl-track tl-audio-track">
-                 <div className="tl-block block-audio" style={{ width: '60%' }}>
-                   <span>CINEMATIC_AMBIENCE.WAV</span>
-                 </div>
-               </div>
+              <div className="tl-track tl-visual-track">
+                <div className="tl-block block-visual" style={{ width: '40%' }}>
+                  <span>S1_VISUAL</span>
+                </div>
+              </div>
+
+              <div className="tl-track tl-audio-track">
+                <div className="tl-block block-audio" style={{ width: '60%' }}>
+                  <span>CINEMATIC_AMBIENCE.WAV</span>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -217,11 +217,11 @@ export default function Architect() {
       {/* RIGHT PANEL: AGENT CHAT */}
       <aside className="editor-agent">
         <div className="agent-header">
-           <div className="agent-title">
-             <Bot size={18} color="var(--accent-violet)" />
-             <span style={{fontWeight: 700}}>NEXORYX AGENT</span>
-           </div>
-           <p className="agent-sub">AI Director for content creators</p>
+          <div className="agent-title">
+            <Bot size={18} color="var(--accent-violet)" />
+            <span style={{ fontWeight: 700 }}>NEXORYX AGENT</span>
+          </div>
+          <p className="agent-sub">AI Director for content creators</p>
         </div>
 
         <div className="agent-chat-history">
@@ -231,16 +231,16 @@ export default function Architect() {
         </div>
 
         <div className="agent-input-area">
-           <div className="agent-textfield">
-              <textarea placeholder="Ask the director..." rows={3} />
-              <button className="btn-send"><Wand2 size={16} /></button>
-           </div>
-           
-           <div className="quick-actions">
-              <button className="chip">CHANGE LIGHTING</button>
-              <button className="chip">ADD SLOW MOTION</button>
-              <button className="chip">COLOR GRADE</button>
-           </div>
+          <div className="agent-textfield">
+            <textarea placeholder="Ask the director..." rows={3} />
+            <button className="btn-send"><Wand2 size={16} /></button>
+          </div>
+
+          <div className="quick-actions">
+            <button className="chip">CHANGE LIGHTING</button>
+            <button className="chip">ADD SLOW MOTION</button>
+            <button className="chip">COLOR GRADE</button>
+          </div>
         </div>
       </aside>
     </div>

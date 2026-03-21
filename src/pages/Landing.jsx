@@ -92,7 +92,7 @@ export default function Landing() {
   const navigate = useNavigate()
   const scriptRef = useRef(null)
 
-/* ---- PHASE 2/3: Simple Loading State -> Final ---- */
+  /* ---- PHASE 2/3: Simple Loading State -> Final ---- */
   const startPipeline = () => {
     if (!topic.trim() || phase !== 'idle') return
     setPhase('loading')
@@ -176,7 +176,7 @@ export default function Landing() {
           {phase === 'final' && (
             <motion.div key="final" className="pipeline-view" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
               <div className="gen-player glass-panel">
-                <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" autoPlay loop muted playsInline style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: '12px', display: 'block', backgroundColor: '#000' }}/>
+                <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" autoPlay loop muted playsInline style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: '12px', display: 'block', backgroundColor: '#000' }} />
                 <div className="gen-player__overlay">
                   <div className="gen-player__prompt-text">"{topic}" · {SCRIPT_SCENES.length} scenes · {totalDuration}s</div>
                 </div>
@@ -234,9 +234,9 @@ export default function Landing() {
         <div className="features__grid">
           {FEATURES.map((f, i) => (
             <motion.div key={i} className="feature-card glass-panel" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.7, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}>
-               <div className="feature-card__icon">{f.icon}</div>
-               <h3 className="feature-card__title">{f.title}</h3>
-               <p className="feature-card__desc">{f.desc}</p>
+              <div className="feature-card__icon">{f.icon}</div>
+              <h3 className="feature-card__title">{f.title}</h3>
+              <p className="feature-card__desc">{f.desc}</p>
             </motion.div>
           ))}
         </div>
