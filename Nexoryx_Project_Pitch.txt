@@ -1,0 +1,41 @@
+# Nexoryx: The Cinematic AI Director
+
+## Project Overview
+Nexoryx is a state-of-the-art cinematic AI directing and editing platform designed for modern content creators. It shifts the paradigm from traditional manual video editing to a high-level "Directorial" experience, where AI assists in the creative process of sequence building, timing, and visual refinement.
+
+## The Core Concept
+Nexoryx allows users to transform a single theme or topic into a structured cinematic production. By leveraging a dual-panel interface (Storyboard + Timeline), it bridges the gap between conceptual storytelling and technical execution.
+
+## Key Features & Capabilities
+
+### 1. Cinematic Storyboard Editor
+*   **Scene-Based Workflow**: Organize your vision into distinct, manageable scenes with unique descriptions and camera motions.
+*   **Integrated Management**: Seamlessly add, delete, and reorder scenes to perfect the narrative flow.
+*   **Direct-to-Scene Cropping**: Intelligent aspect ratio selection (16:9, 9:16, 1:1, 4:5) optimized for different social distribution channels.
+
+### 2. High-Performance Architect Canvas
+*   **Real-Time Synchronization**: A fully reactive canvas where video playback, timecodes, and the interactive timeline are perfectly in sync.
+*   **Dynamic Metadata Integration**: Automatic duration detection that adjusts scene lengths based on actual video media (e.g., your primary 15-second reveal).
+*   **Visual Feedback Loop**: Intuitive controls for playback, fullscreen preview, and frame-accurate seeking.
+
+### 3. Professional Interactive Timeline
+*   **Precision Ruler System**: A professional-grade ruler with 1-second interval ticks and 5-second timecode labels for precise navigation.
+*   **Multi-Track Architecture**: Visual and audio tracks that clearly delineate the different layers of the cinematic production.
+*   **Coordinate-Based Seeking**: Navigate through your project instantly by interacting directly with any part of the tracks.
+
+### 4. AI Director Chat (Integrated Agent)
+*   **Creative Assistance**: A dedicated AI agent acting as your "Assistant Director" to help refine prompts, suggest lighting changes, or optimize scene transitions.
+*   **Quick Actions**: One-click shortcuts for complex cinematic adjustments like "Slow Motion" or "Color Grading."
+
+### 5. Seamless Export & Persistence
+*   **Instant Saving**: Integrated save functionality with real-time visual feedback to ensure work is never lost.
+*   **Direct Export Path**: A streamlined transition from editing to the final rendering and sharing phase.
+
+## Technical Foundation
+*   **Frontend Architecture**: Built with React and Vite for lightning-fast development and runtime performance.
+*   **Motion & Interactions**: Powered by Framer Motion for premium, smooth-as-silk UI transitions and micro-animations.
+*   **Visual Language**: A bespoke dark-mode aesthetic utilizing an HSL-tailored color palette (Vivid Indigo, Deep Violet, and Matte Slate) for a premium, professional feel.
+*   **Scalability**: Component-based design allowing for easy integration of future AI rendering pipelines.
+
+## The Vision
+Nexoryx is built for the era of AI-native creation—where the barrier between an idea and a cinematic masterpiece is reduced to a simple conversation with an AI Director.

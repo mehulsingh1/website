@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, Play, ArrowDown, Clock, Cpu, Film,
-  Layers, Bot, Clapperboard, Check, Loader2,
-  ChevronRight, Zap, Eye, Save, Download, Pen,
-  ArrowRight, Video, FileText
+  Layers, Bot, Clapperboard, Loader2,
+  Zap, Eye, ArrowRight
 } from 'lucide-react'
 
 /* ---- SIMULATED SCRIPT GENERATION ---- */
@@ -84,30 +83,69 @@ const FEATURES = [
 
 export default function Landing() {
   const [topic, setTopic] = useState('')
-  const [phase, setPhase] = useState('idle')
-  const [scriptLines, setScriptLines] = useState([])
-  const [renderProgress, setRenderProgress] = useState([])
-  const [compositeProgress, setCompositeProgress] = useState(0)
-  const [saved, setSaved] = useState(false)
+  const [showPAI, setShowPAI] = useState(false)
+  const [iframeLoading, setIframeLoading] = useState(false)
   const navigate = useNavigate()
-  const scriptRef = useRef(null)
 
-  /* ---- PHASE 2/3: Simple Loading State -> Final ---- */
+  /* ---- Open PAI site inside our site ---- */
   const startPipeline = () => {
-    if (!topic.trim() || phase !== 'idle') return
-    setPhase('loading')
-    setTimeout(() => {
-      setPhase('final')
-    }, 4500)
+    if (!topic.trim() || showPAI) return
+    setIframeLoading(true)
+    setShowPAI(true)
+  }
+
+  const goBack = () => {
+    setShowPAI(false)
+    setIframeLoading(false)
   }
 
   const resetAll = () => {
-    setPhase('idle')
+    setShowPAI(false)
+    setIframeLoading(false)
     setTopic('')
-    setSaved(false)
   }
 
-  const totalDuration = SCRIPT_SCENES.reduce((s, sc) => s + sc.duration, 0)
+  /* ---- FULLSCREEN PAI IFRAME OVERLAY ---- */
+  if (showPAI) {
+    return (
+      <div className="pai-overlay">
+        {/* Back Bar */}
+        <div className="pai-overlay__bar">
+          <button className="pai-overlay__back-btn" onClick={goBack} id="pai-back-btn">
+            <ArrowRight size={18} style={{ transform: 'rotate(180deg)' }} />
+            <span>Back to Nexoryx</span>
+          </button>
+          <div className="pai-overlay__topic">
+            <Sparkles size={14} />
+            <span>{topic}</span>
+          </div>
+          <button className="pai-overlay__new-btn" onClick={resetAll}>
+            <Sparkles size={14} />
+            <span>New Topic</span>
+          </button>
+        </div>
+
+        {/* Loading indicator */}
+        {iframeLoading && (
+          <div className="pai-overlay__loading">
+            <Loader2 className="spinning" size={36} />
+            <p>Loading PAI Studio...</p>
+          </div>
+        )}
+
+        {/* PAI iframe */}
+        <iframe
+          src="https://pai.utopaistudios.com/"
+          className="pai-overlay__iframe"
+          title="PAI by Utopai Studios"
+          allow="camera; microphone; fullscreen; autoplay; clipboard-write"
+          allowFullScreen
+          onLoad={() => setIframeLoading(false)}
+          style={{ opacity: iframeLoading ? 0 : 1 }}
+        />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -119,97 +157,45 @@ export default function Landing() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
-          {phase === 'idle' && (
-            <>
-              <div className="hero__badge">
-                <span className="hero__badge-dot" />
-                Now in Public Beta
-              </div>
-              <h1 className="hero__title">
-                Cinematic Vision.{' '}
-                <br />
-                <span className="hero__title-gradient">One Prompt.</span>
-              </h1>
-              <p className="hero__subtitle">
-                Nexoryx is the AI-powered cinematic engine that transforms your text into
-                stunning scene-by-scene videos — built for creators who refuse to compromise.
-              </p>
-            </>
-          )}
+          <div className="hero__badge">
+            <span className="hero__badge-dot" />
+            Now in Public Beta
+          </div>
+          <h1 className="hero__title">
+            Cinematic Vision.{' '}
+            <br />
+            <span className="hero__title-gradient">One Prompt.</span>
+          </h1>
+          <p className="hero__subtitle">
+            Nexoryx is the AI-powered cinematic engine that transforms your text into
+            stunning scene-by-scene videos — built for creators who refuse to compromise.
+          </p>
         </motion.div>
 
-        <AnimatePresence mode="wait">
-          {/* ---- PHASE: IDLE — Topic Input ---- */}
-          {phase === 'idle' && (
-            <motion.div key="prompt" className="prompt-bar" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-              <div className="prompt-bar__wrapper">
-                <input
-                  className="prompt-bar__input"
-                  type="text"
-                  placeholder="Enter your topic... e.g. 'Premium sports watch ad'"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && startPipeline()}
-                  autoComplete="off"
-                  id="hero-prompt-input"
-                />
-                <button className="prompt-bar__btn" onClick={startPipeline} disabled={!topic.trim()} id="hero-generate-btn">
-                  <Sparkles size={16} />
-                  <span>Generate</span>
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ---- PHASE: LOADING ---- */}
-          {phase === 'loading' && (
-            <motion.div key="loading" className="pipeline-view" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-              <div className="pipeline-step glass-panel" style={{ textAlign: 'center', padding: '60px 40px' }}>
-                <Loader2 className="spinning" size={48} style={{ color: 'var(--text-primary)', margin: '0 auto 20px' }} />
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Generating Cinematic Video...</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: 10 }}>Applying lighting, physics, and compositing elements.</p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ---- PHASE: FINAL VIDEO READY ---- */}
-          {phase === 'final' && (
-            <motion.div key="final" className="pipeline-view" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
-              <div className="gen-player glass-panel">
-                <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" autoPlay loop muted playsInline style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: '12px', display: 'block', backgroundColor: '#000' }} />
-                <div className="gen-player__overlay">
-                  <div className="gen-player__prompt-text">"{topic}" · {SCRIPT_SCENES.length} scenes · {totalDuration}s</div>
-                </div>
-              </div>
-              <div className="gen-actions">
-                <button className="gen-action-card glass-panel" onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2500) }}>
-                  <Save size={20} />
-                  <span>{saved ? '✓ Saved!' : 'Save Directly'}</span>
-                </button>
-                <button className="gen-action-card glass-panel">
-                  <Download size={20} />
-                  <span>Download MP4</span>
-                </button>
-                <button className="gen-action-card glass-panel gen-action-card--primary" onClick={() => navigate('/architect', { state: { topic, scenes: SCRIPT_SCENES } })}>
-                  <Pen size={20} />
-                  <span>Edit in Architect</span>
-                </button>
-                <button className="gen-action-card glass-panel" onClick={resetAll}>
-                  <Sparkles size={20} />
-                  <span>Generate Another</span>
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {phase === 'idle' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5, duration: 1 }} style={{ marginTop: 50 }}>
-            <button className="btn-ghost" onClick={() => document.getElementById('showcase')?.scrollIntoView({ behavior: 'smooth' })} style={{ fontSize: '0.85rem' }}>
-              <Eye size={16} /> See Generations <ArrowDown size={14} />
+        <motion.div className="prompt-bar" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
+          <div className="prompt-bar__wrapper">
+            <input
+              className="prompt-bar__input"
+              type="text"
+              placeholder="Enter your topic... e.g. 'Premium sports watch ad'"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && startPipeline()}
+              autoComplete="off"
+              id="hero-prompt-input"
+            />
+            <button className="prompt-bar__btn" onClick={startPipeline} disabled={!topic.trim()} id="hero-generate-btn">
+              <Sparkles size={16} />
+              <span>Generate</span>
             </button>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5, duration: 1 }} style={{ marginTop: 50 }}>
+          <button className="btn-ghost" onClick={() => document.getElementById('showcase')?.scrollIntoView({ behavior: 'smooth' })} style={{ fontSize: '0.85rem' }}>
+            <Eye size={16} /> See Generations <ArrowDown size={14} />
+          </button>
+        </motion.div>
       </section>
 
       {/* ---- SHOWCASE ---- */}
