@@ -84,28 +84,28 @@ const FEATURES = [
 export default function Landing() {
   const [topic, setTopic] = useState('')
   const [showPAI, setShowPAI] = useState(false)
-  const [iframeLoading, setIframeLoading] = useState(false)
   const navigate = useNavigate()
 
-  /* ---- Open PAI site inside our site ---- */
+  /* ---- Open PAI preview inside our site ---- */
   const startPipeline = () => {
     if (!topic.trim() || showPAI) return
-    setIframeLoading(true)
     setShowPAI(true)
   }
 
   const goBack = () => {
     setShowPAI(false)
-    setIframeLoading(false)
   }
 
   const resetAll = () => {
     setShowPAI(false)
-    setIframeLoading(false)
     setTopic('')
   }
 
-  /* ---- FULLSCREEN PAI IFRAME OVERLAY ---- */
+  const openPAI = () => {
+    window.open('https://pai.utopaistudios.com/', '_blank', 'noopener,noreferrer')
+  }
+
+  /* ---- FULLSCREEN PAI PREVIEW OVERLAY ---- */
   if (showPAI) {
     return (
       <div className="pai-overlay">
@@ -125,24 +125,26 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* Loading indicator */}
-        {iframeLoading && (
-          <div className="pai-overlay__loading">
-            <Loader2 className="spinning" size={36} />
-            <p>Loading PAI Studio...</p>
+        {/* PAI Preview Content */}
+        <div className="pai-preview">
+          <div className="pai-preview__image-wrap">
+            <img src="/pai-preview.png" alt="PAI by Utopai Studios" className="pai-preview__image" />
+            <div className="pai-preview__overlay">
+              <div className="pai-preview__badge">
+                <Sparkles size={16} />
+                <span>PAI by Utopai Studios</span>
+              </div>
+              <h2 className="pai-preview__title">Where AI meets cinema<br />to create epic stories</h2>
+              <p className="pai-preview__desc">Your topic "<strong>{topic}</strong>" is ready to be brought to life with PAI's cinematic AI engine.</p>
+              <button className="pai-preview__open-btn" onClick={openPAI} id="pai-open-btn">
+                <Play size={18} />
+                <span>Open PAI Studio</span>
+                <ArrowRight size={16} />
+              </button>
+              <p className="pai-preview__hint">Opens in a new tab</p>
+            </div>
           </div>
-        )}
-
-        {/* PAI iframe */}
-        <iframe
-          src="https://pai.utopaistudios.com/"
-          className="pai-overlay__iframe"
-          title="PAI by Utopai Studios"
-          allow="camera; microphone; fullscreen; autoplay; clipboard-write"
-          allowFullScreen
-          onLoad={() => setIframeLoading(false)}
-          style={{ opacity: iframeLoading ? 0 : 1 }}
-        />
+        </div>
       </div>
     )
   }
