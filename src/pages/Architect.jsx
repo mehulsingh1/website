@@ -1,55 +1,154 @@
-import { useState, useEffect, useRef } from 'react'
-import { Plus, ArrowLeft, Download, Play, Pause, Save, CheckCircle2, Loader2, Trash2, Clock, RefreshCw, Film } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import {
+  ArrowLeft, Download, Play, Pause, Save, CheckCircle2, Loader2,
+  Trash2, Clock, RefreshCw, Film, Plus, Camera, Type, Wand2,
+  Volume2, VolumeX, Maximize2, SkipBack, SkipForward,
+  ChevronLeft, ChevronRight, Layers, Sparkles, Settings,
+  Copy, Move, Palette
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
 const MOCK_VIDEOS = [
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+  "/generation.mp4",
+  "/generation1.mp4",
+  "/final.mp4",
+]
+
+const CAMERA_OPTIONS = ['Drone Descent', 'Macro Tracking', 'Multi-angle', 'Steadicam Arc', 'Static', 'Dolly Push', 'Handheld', 'Crane Shot']
+const STYLE_OPTIONS = ['Cinematic', 'Documentary', 'Commercial', 'Music Video', 'Narrative', 'Abstract']
+const MOOD_OPTIONS = ['Dramatic', 'Uplifting', 'Mysterious', 'Energetic', 'Calm', 'Intense']
+
+const DEFAULT_SCENES = [
+  {
+    id: 1,
+    title: 'The Opening',
+    prompt: 'Wide aerial establishing shot — the product emerges from shadow into dramatic rim lighting with atmospheric volumetrics.',
+    duration: 4,
+    camera: 'Drone Descent',
+    style: 'Cinematic',
+    mood: 'Dramatic',
+  },
+  {
+    id: 2,
+    title: 'The Discovery',
+    prompt: 'Macro tracking sequence revealing intricate details. Shallow depth-of-field creates an intimate, premium feel.',
+    duration: 6,
+    camera: 'Macro Tracking',
+    style: 'Commercial',
+    mood: 'Mysterious',
+  },
+  {
+    id: 3,
+    title: 'The Journey',
+    prompt: 'Dynamic montage with quick cuts between multiple angles. Motion blur and grain add texture and energy to the sequence.',
+    duration: 8,
+    camera: 'Multi-angle',
+    style: 'Music Video',
+    mood: 'Energetic',
+  },
+  {
+    id: 4,
+    title: 'The Climax',
+    prompt: 'Hero shot with volumetric lighting and slow motion. The score reaches its peak as the product commands the frame.',
+    duration: 5,
+    camera: 'Steadicam Arc',
+    style: 'Cinematic',
+    mood: 'Intense',
+  },
+  {
+    id: 5,
+    title: 'The Resolution',
+    prompt: 'Clean, elegant composition. The brand mark appears with subtle particle effects. A confident, lasting impression.',
+    duration: 3,
+    camera: 'Static',
+    style: 'Commercial',
+    mood: 'Calm',
+  },
 ]
 
 export default function Architect() {
   const navigate = useNavigate()
-  // Mock Data
-  const [topic, setTopic] = useState('Cinematic Product Showcase')
-  const [scenes, setScenes] = useState([
-    { 
-      id: 1, 
-      title: 'Scene 1', 
-      description: 'Wide establishing shot — the product emerges from shadow into dramatic rim lighting.', 
-      duration: 5,
-      poster: "/cinematic1.png"
-    },
-    { 
-      id: 2, 
-      title: 'Scene 2', 
-      description: 'Dynamic sequence showing the product in use. Quick cuts between macro details.', 
-      duration: 10,
-      poster: "/cinematic2.png"
-    },
-  ])
+  const videoRef = useRef(null)
+  const timelineRef = useRef(null)
 
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveStatus, setSaveStatus] = useState('idle') // idle, saving, saved
+  const [projectTitle, setProjectTitle] = useState('Cinematic Product Showcase')
+  const [scenes, setScenes] = useState(DEFAULT_SCENES)
+  const [selectedId, setSelectedId] = useState(1)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('idle')
   const [regeneratingIds, setRegeneratingIds] = useState([])
   const [isCompiling, setIsCompiling] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [videoDuration, setVideoDuration] = useState(0)
 
+  const selectedScene = scenes.find(s => s.id === selectedId) || scenes[0]
+  const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
+  const selectedIndex = scenes.findIndex(s => s.id === selectedId)
+  const videoUrl = MOCK_VIDEOS[(selectedScene.id - 1) % MOCK_VIDEOS.length]
+
+  /* ---- Video controls ---- */
+  const togglePlay = () => {
+    if (!videoRef.current) return
+    if (isPlaying) {
+      videoRef.current.pause()
+    } else {
+      videoRef.current.play()
+    }
+    setIsPlaying(!isPlaying)
+  }
+
+  const toggleMute = () => {
+    if (!videoRef.current) return
+    videoRef.current.muted = !isMuted
+    setIsMuted(!isMuted)
+  }
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    const onTime = () => setCurrentTime(v.currentTime)
+    const onDur = () => setVideoDuration(v.duration)
+    const onEnd = () => setIsPlaying(false)
+    v.addEventListener('timeupdate', onTime)
+    v.addEventListener('loadedmetadata', onDur)
+    v.addEventListener('ended', onEnd)
+    return () => {
+      v.removeEventListener('timeupdate', onTime)
+      v.removeEventListener('loadedmetadata', onDur)
+      v.removeEventListener('ended', onEnd)
+    }
+  }, [selectedId])
+
+  /* ---- Scene navigation ---- */
+  const selectPrev = () => {
+    if (selectedIndex > 0) {
+      setSelectedId(scenes[selectedIndex - 1].id)
+      setIsPlaying(false)
+    }
+  }
+
+  const selectNext = () => {
+    if (selectedIndex < scenes.length - 1) {
+      setSelectedId(scenes[selectedIndex + 1].id)
+      setIsPlaying(false)
+    }
+  }
+
+  /* ---- Actions ---- */
   const handleSave = () => {
     setSaveStatus('saving')
-    setIsSaving(true)
     setTimeout(() => {
-      setIsSaving(false)
       setSaveStatus('saved')
-      setTimeout(() => setSaveStatus('idle'), 3000)
+      setTimeout(() => setSaveStatus('idle'), 2500)
     }, 1200)
   }
 
   const handleRegenerate = (id) => {
     setRegeneratingIds(prev => [...prev, id])
     setTimeout(() => {
-      setRegeneratingIds(prev => prev.filter(reqId => reqId !== id))
+      setRegeneratingIds(prev => prev.filter(r => r !== id))
     }, 2500)
   }
 
@@ -57,7 +156,6 @@ export default function Architect() {
     setIsCompiling(true)
     setTimeout(() => {
       setIsCompiling(false)
-      alert("Compilation complete! Your master video is ready for download.")
     }, 3000)
   }
 
@@ -65,189 +163,339 @@ export default function Architect() {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s))
   }
 
-  const addSceneAt = (index) => {
-    const newId = scenes.length > 0 ? Math.max(...scenes.map(s => s.id)) + 1 : 1
-    const newScene = { 
-      id: newId, 
-      title: `Scene ${newId}`, 
-      description: '', 
+  const addScene = (afterIndex) => {
+    const newId = Math.max(...scenes.map(s => s.id), 0) + 1
+    const newScene = {
+      id: newId,
+      title: `Scene ${scenes.length + 1}`,
+      prompt: '',
       duration: 5,
-      poster: "/cinematic1.png" 
+      camera: 'Static',
+      style: 'Cinematic',
+      mood: 'Dramatic',
     }
     setScenes(prev => {
       const copy = [...prev]
-      copy.splice(index, 0, newScene)
-      // Re-title scenes to maintain order visually
-      return copy.map((s, i) => ({ ...s, title: `Scene ${i + 1}` }))
+      copy.splice(afterIndex + 1, 0, newScene)
+      return copy
     })
+    setSelectedId(newId)
   }
 
   const deleteScene = (id) => {
+    if (scenes.length <= 1) return
     setScenes(prev => {
       const remaining = prev.filter(s => s.id !== id)
-      return remaining.map((s, i) => ({ ...s, title: `Scene ${i + 1}` }))
+      if (id === selectedId) {
+        setSelectedId(remaining[0].id)
+      }
+      return remaining
     })
   }
 
+  const duplicateScene = (id) => {
+    const source = scenes.find(s => s.id === id)
+    if (!source) return
+    const newId = Math.max(...scenes.map(s => s.id), 0) + 1
+    const idx = scenes.findIndex(s => s.id === id)
+    const dup = { ...source, id: newId, title: `${source.title} (Copy)` }
+    setScenes(prev => {
+      const copy = [...prev]
+      copy.splice(idx + 1, 0, dup)
+      return copy
+    })
+    setSelectedId(newId)
+  }
+
+  const formatTime = (sec) => {
+    const m = Math.floor(sec / 60)
+    const s = Math.floor(sec % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const isRegenerating = regeneratingIds.includes(selectedScene.id)
+
   return (
-    <div className="flow-page-layout">
-      {/* Top Fixed Header */}
-      <header className="flow-header">
-        <div className="flow-header-left">
-          <button className="flow-back-btn" onClick={() => navigate('/')}>
+    <div className="arch-editor">
+      {/* ==================== HEADER ==================== */}
+      <header className="arch-header">
+        <div className="arch-header__left">
+          <button className="arch-header__back" onClick={() => navigate('/')}>
             <ArrowLeft size={18} />
           </button>
-          <div className="flow-project-meta">
-            <span className="flow-badge">NEXORYX STUDIO</span>
-            <h1 className="flow-title">{topic}</h1>
+          <div className="arch-header__meta">
+            <span className="arch-header__badge">
+              <Layers size={10} /> Y AI ARCHITECT
+            </span>
+            <input
+              className="arch-header__title-input"
+              value={projectTitle}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              spellCheck={false}
+            />
           </div>
         </div>
-
-        <div className="flow-header-actions">
-          <span className="flow-auto-save"><span className="dot"></span> AUTO-SAVING</span>
+        <div className="arch-header__right">
+          <span className="arch-header__info">
+            {scenes.length} scenes • ~{totalDuration}s
+          </span>
           <button
-            className={`flow-btn-save ${saveStatus === 'saved' ? 'success' : ''}`}
+            className={`arch-btn arch-btn--save ${saveStatus === 'saved' ? 'arch-btn--success' : ''}`}
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={saveStatus === 'saving'}
           >
-            {saveStatus === 'saving' ? <Loader2 size={16} className="spin" /> : saveStatus === 'saved' ? <CheckCircle2 size={16} /> : <Save size={16} />}
-            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Draft'}
+            {saveStatus === 'saving' ? <Loader2 size={14} className="spinning" /> : saveStatus === 'saved' ? <CheckCircle2 size={14} /> : <Save size={14} />}
+            <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save'}</span>
+          </button>
+          <button
+            className={`arch-btn arch-btn--compile ${isCompiling ? 'arch-btn--loading' : ''}`}
+            onClick={handleCompile}
+            disabled={isCompiling}
+          >
+            {isCompiling ? <Loader2 size={14} className="spinning" /> : <Download size={14} />}
+            <span>{isCompiling ? 'Compiling...' : 'Export'}</span>
           </button>
         </div>
       </header>
 
-      {/* Main Vertical Flow Center */}
-      <main className="flow-main-container">
-        <div className="flow-canvas">
-          
-          <AnimatePresence>
-            {scenes.map((scene, idx) => {
-              const videoUrl = MOCK_VIDEOS[(scene.id - 1) % MOCK_VIDEOS.length]
-              const isRegenerating = regeneratingIds.includes(scene.id)
+      {/* ==================== MAIN WORKSPACE ==================== */}
+      <div className="arch-workspace">
 
-              return (
-                <motion.div 
-                  key={scene.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="flow-node-wrapper"
-                >
-                  {/* SCENE BLOCK */}
-                  <div className="flow-scene-card glass-panel">
-                    <div className="fsc-video-area">
-                      {isRegenerating ? (
-                        <div className="fsc-video-placeholder pulse-overlay">
-                          <Loader2 size={32} className="spin text-indigo" />
-                          <span>Generating Video...</span>
-                        </div>
-                      ) : (
-                        <video 
-                          src={videoUrl} 
-                          controls 
-                          controlsList="nodownload" 
-                          className="fsc-video-player" 
-                          poster={scene.poster} 
-                        />
-                      )}
-                    </div>
+        {/* ---- LEFT: Video Preview ---- */}
+        <div className="arch-preview">
+          <div className="arch-preview__player-wrap">
+            {isRegenerating ? (
+              <div className="arch-preview__loading">
+                <Loader2 size={40} className="spinning" />
+                <span>Regenerating scene...</span>
+              </div>
+            ) : (
+              <video
+                ref={videoRef}
+                key={selectedScene.id}
+                src={videoUrl}
+                className="arch-preview__video"
+                muted={isMuted}
+                onClick={togglePlay}
+              />
+            )}
 
-                    <div className="fsc-details-area">
-                      <div className="fsc-header">
-                        <div className="fsc-meta-group">
-                          <span className="sc-badge">{scene.title}</span>
-                          <span className="sc-duration-badge"><Clock size={12}/> {scene.duration}s</span>
-                        </div>
-                        <button className="icon-btn-danger" onClick={() => deleteScene(scene.id)} title="Delete Scene">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+            {/* Overlay: scene badge */}
+            <div className="arch-preview__scene-badge">
+              <Film size={12} />
+              <span>Scene {selectedIndex + 1} / {scenes.length}</span>
+            </div>
+          </div>
 
-                      <div className="fsc-prompt-box">
-                        <label>SCENE PROMPT</label>
-                        <textarea
-                          className="fsc-textarea"
-                          value={scene.description}
-                          onChange={(e) => updateScene(scene.id, { description: e.target.value })}
-                          placeholder="Describe the cinematic action occurring in this scene..."
-                        />
-                      </div>
-
-                      <div className="fsc-footer">
-                        <button className="flow-btn-primary" onClick={() => handleRegenerate(scene.id)} disabled={isRegenerating}>
-                          <RefreshCw size={14} className={isRegenerating ? "spin" : ""} /> 
-                          {isRegenerating ? "GENERATING..." : "REGENERATE CLIP"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CONNECTION LINE & PLUS BUTTON */}
-                  <div className="flow-connection">
-                    <div className="fc-line"></div>
-                    <button className="fc-add-btn" onClick={() => addSceneAt(idx + 1)} title="Add Scene Here">
-                      <Plus size={18} />
-                    </button>
-                    {idx === scenes.length - 1 && <div className="fc-line fc-line-extended"></div>}
-                  </div>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-
-          {scenes.length === 0 && (
-            <div className="flow-empty-state">
-              <Film size={48} className="text-muted mb-4" />
-              <h3>Your Pipeline is Empty</h3>
-              <p>Start your cinematic journey by adding your first scene.</p>
-              <button className="flow-btn-primary mt-4" onClick={() => addSceneAt(0)}>
-                <Plus size={16} /> CREATE INITIAL SCENE
+          {/* Transport Controls */}
+          <div className="arch-preview__controls">
+            <div className="arch-transport">
+              <button className="arch-transport__btn" onClick={selectPrev} disabled={selectedIndex === 0} title="Previous Scene">
+                <SkipBack size={16} />
+              </button>
+              <button className="arch-transport__play" onClick={togglePlay}>
+                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              </button>
+              <button className="arch-transport__btn" onClick={selectNext} disabled={selectedIndex === scenes.length - 1} title="Next Scene">
+                <SkipForward size={16} />
               </button>
             </div>
-          )}
 
-          {/* FINAL MASTER COMPILATION SECTION */}
-          {scenes.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flow-final-section glass-panel-heavy"
-            >
-              <div className="final-header">
-                <h2>Master Video Compilation</h2>
-                <p>Preview the seamless combination of all your generated scenes above.</p>
-              </div>
+            <div className="arch-scrubber">
+              <span className="arch-scrubber__time">{formatTime(currentTime)}</span>
+              <input
+                type="range"
+                min="0"
+                max={videoDuration || 100}
+                value={currentTime}
+                onChange={(e) => { if (videoRef.current) videoRef.current.currentTime = e.target.value }}
+                className="arch-scrubber__bar"
+              />
+              <span className="arch-scrubber__time">{formatTime(videoDuration)}</span>
+            </div>
 
-              <div className="final-video-wrapper">
-                <video 
-                  src={MOCK_VIDEOS[0]} 
-                  controls 
-                  preload="metadata"
-                  className="master-video-player"
-                  poster="/cinematic1.png"
+            <div className="arch-preview__extra-controls">
+              <button className="arch-transport__btn" onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
+                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ---- RIGHT: Scene Inspector ---- */}
+        <div className="arch-inspector">
+          <div className="arch-inspector__header">
+            <h3 className="arch-inspector__title">
+              <Settings size={14} />
+              Scene Inspector
+            </h3>
+            <div className="arch-inspector__actions">
+              <button className="arch-icon-btn" onClick={() => duplicateScene(selectedScene.id)} title="Duplicate">
+                <Copy size={14} />
+              </button>
+              <button className="arch-icon-btn arch-icon-btn--danger" onClick={() => deleteScene(selectedScene.id)} title="Delete" disabled={scenes.length <= 1}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="arch-inspector__body">
+            {/* Scene Title */}
+            <div className="arch-field">
+              <label className="arch-field__label">
+                <Type size={12} /> Title
+              </label>
+              <input
+                className="arch-field__input"
+                value={selectedScene.title}
+                onChange={(e) => updateScene(selectedScene.id, { title: e.target.value })}
+                placeholder="Scene title..."
+              />
+            </div>
+
+            {/* Scene Prompt */}
+            <div className="arch-field">
+              <label className="arch-field__label">
+                <Wand2 size={12} /> Scene Prompt
+              </label>
+              <textarea
+                className="arch-field__textarea"
+                value={selectedScene.prompt}
+                onChange={(e) => updateScene(selectedScene.id, { prompt: e.target.value })}
+                placeholder="Describe the cinematic action..."
+                rows={4}
+              />
+            </div>
+
+            {/* Duration */}
+            <div className="arch-field">
+              <label className="arch-field__label">
+                <Clock size={12} /> Duration
+              </label>
+              <div className="arch-field__row">
+                <input
+                  type="range"
+                  min="1"
+                  max="30"
+                  value={selectedScene.duration}
+                  onChange={(e) => updateScene(selectedScene.id, { duration: parseInt(e.target.value) })}
+                  className="arch-field__slider"
                 />
+                <span className="arch-field__value">{selectedScene.duration}s</span>
               </div>
+            </div>
 
-              <div className="final-actions">
-                <button 
-                  className={`flow-btn-compile ${isCompiling ? 'compiling' : ''}`}
-                  onClick={handleCompile}
-                  disabled={isCompiling}
+            {/* Camera */}
+            <div className="arch-field">
+              <label className="arch-field__label">
+                <Camera size={12} /> Camera Move
+              </label>
+              <select
+                className="arch-field__select"
+                value={selectedScene.camera}
+                onChange={(e) => updateScene(selectedScene.id, { camera: e.target.value })}
+              >
+                {CAMERA_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {/* Style */}
+            <div className="arch-field">
+              <label className="arch-field__label">
+                <Palette size={12} /> Style
+              </label>
+              <div className="arch-field__chips">
+                {STYLE_OPTIONS.map(s => (
+                  <button
+                    key={s}
+                    className={`arch-chip ${selectedScene.style === s ? 'arch-chip--active' : ''}`}
+                    onClick={() => updateScene(selectedScene.id, { style: s })}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mood */}
+            <div className="arch-field">
+              <label className="arch-field__label">
+                <Sparkles size={12} /> Mood
+              </label>
+              <div className="arch-field__chips">
+                {MOOD_OPTIONS.map(m => (
+                  <button
+                    key={m}
+                    className={`arch-chip ${selectedScene.mood === m ? 'arch-chip--active' : ''}`}
+                    onClick={() => updateScene(selectedScene.id, { mood: m })}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Regenerate */}
+            <button
+              className={`arch-btn-regen ${isRegenerating ? 'arch-btn-regen--loading' : ''}`}
+              onClick={() => handleRegenerate(selectedScene.id)}
+              disabled={isRegenerating}
+            >
+              <RefreshCw size={16} className={isRegenerating ? 'spinning' : ''} />
+              <span>{isRegenerating ? 'Regenerating...' : 'Regenerate Scene'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ==================== TIMELINE STRIP ==================== */}
+      <div className="arch-timeline">
+        <div className="arch-timeline__header">
+          <div className="arch-timeline__label">
+            <Film size={12} />
+            <span>Timeline</span>
+          </div>
+          <span className="arch-timeline__duration">Total: {totalDuration}s</span>
+        </div>
+
+        <div className="arch-timeline__strip" ref={timelineRef}>
+          {scenes.map((scene, idx) => {
+            const isSelected = scene.id === selectedId
+            const isRegen = regeneratingIds.includes(scene.id)
+
+            return (
+              <div key={scene.id} className="arch-timeline__item-wrap">
+                <motion.button
+                  className={`arch-tl-card ${isSelected ? 'arch-tl-card--active' : ''} ${isRegen ? 'arch-tl-card--regen' : ''}`}
+                  onClick={() => { setSelectedId(scene.id); setIsPlaying(false) }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  layout
                 >
-                  {isCompiling ? <Loader2 size={20} className="spin" /> : <Film size={20} />}
-                  {isCompiling ? "COMPILING PIPELINE..." : "COMPILE & DOWNLOAD MASTER"}
+                  <div className="arch-tl-card__thumb">
+                    {isRegen ? (
+                      <Loader2 size={16} className="spinning" />
+                    ) : (
+                      <Film size={16} />
+                    )}
+                  </div>
+                  <div className="arch-tl-card__info">
+                    <span className="arch-tl-card__num">S{idx + 1}</span>
+                    <span className="arch-tl-card__name">{scene.title}</span>
+                    <span className="arch-tl-card__dur">{scene.duration}s</span>
+                  </div>
+                  {isSelected && <div className="arch-tl-card__indicator" />}
+                </motion.button>
+
+                {/* Add button between scenes */}
+                <button className="arch-timeline__add" onClick={() => addScene(idx)} title="Insert scene">
+                  <Plus size={12} />
                 </button>
               </div>
-            </motion.div>
-          )}
-
-          {/* Bottom Padding spacer */}
-          <div className="flow-bottom-spacer"></div>
-
+            )
+          })}
         </div>
-      </main>
+      </div>
     </div>
   )
 }
