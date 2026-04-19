@@ -37,6 +37,7 @@ export default function Navbar() {
         <Link to="/#showcase" className="navbar__link" onClick={closeMenu}>Showcase</Link>
         <a href="#features" className="navbar__link" onClick={closeMenu}>Features</a>
         <Link to="/pricing" className="navbar__link" onClick={closeMenu}>Pricing</Link>
+        <Link to="/history" className="navbar__link" onClick={closeMenu}>History</Link>
 
         <button
           className="theme-toggle"

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useHistory } from '../components/HistoryContext'
 
 const MOCK_VIDEOS = [
   "/generation.mp4",
@@ -69,6 +70,7 @@ const DEFAULT_SCENES = [
 
 export default function Architect() {
   const navigate = useNavigate()
+  const { addVideo } = useHistory()
   const videoRef = useRef(null)
   const timelineRef = useRef(null)
 
@@ -156,6 +158,13 @@ export default function Architect() {
     setIsCompiling(true)
     setTimeout(() => {
       setIsCompiling(false)
+      addVideo({
+        title: projectTitle || 'Cinematic Creation',
+        duration: totalDuration,
+        quality: '4K',
+        videoUrl: videoUrl, // Save the currently playing full "mock" sequence
+      })
+      navigate('/history')
     }, 3000)
   }
 

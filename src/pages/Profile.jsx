@@ -3,12 +3,14 @@ import { useNavigate, Link } from 'react-router-dom'
 import {
   User, Mail, Calendar, Zap, Rocket,
   LogOut, Settings, Shield, Clock, Film,
-  ArrowRight, Sparkles, ChevronRight, Play
+  ArrowRight, Sparkles, ChevronRight, Play, Film as FilmIcon
 } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
+import { useHistory } from '../components/HistoryContext'
 
 export default function Profile() {
   const { user, logout } = useAuth()
+  const { history } = useHistory()
   const navigate = useNavigate()
 
   if (!user) {
@@ -149,19 +151,19 @@ export default function Profile() {
           </div>
 
           <div className="profile-video-list">
-            {[
-              { id: 1, name: "Midnight Cyberpunk City", date: "2h ago", scenes: 12, quality: "4K" },
-              { id: 2, name: "Luxury Watch Commercial", date: "1d ago", scenes: 8, quality: "4K" },
-              { id: 3, name: "Golden Hour Desert Flyover", date: "3d ago", scenes: 24, quality: "8K" },
-            ].map((vid) => (
+            {history.slice(0, 3).map((vid) => (
               <div key={vid.id} className="profile-video-item">
                 <div className="profile-video-thumb">
-                  <Play size={16} />
+                  {vid.videoUrl ? (
+                    <video src={vid.videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} autoPlay loop muted />
+                  ) : (
+                    <Play size={16} />
+                  )}
                 </div>
                 <div className="profile-video-info">
-                  <div className="profile-video-title">{vid.name}</div>
+                  <div className="profile-video-title">{vid.title}</div>
                   <div className="profile-video-meta">
-                    {vid.date} · {vid.scenes} scenes · {vid.quality}
+                    {new Date(vid.date).toLocaleDateString()} · {vid.duration}s · {vid.quality}
                   </div>
                 </div>
                 <div className="profile-video-status">
@@ -169,6 +171,12 @@ export default function Profile() {
                 </div>
               </div>
             ))}
+            {history.length === 0 && (
+              <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>
+                <FilmIcon size={24} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                No recent creations. Head to Architect to get started!
+              </div>
+            )}
           </div>
         </motion.div>
 
