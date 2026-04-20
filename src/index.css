@@ -7845,6 +7845,36 @@ h6 {
   border-radius: 0 3px 3px 0;
 }
 
+/* Error Banner */
+.yai-render__error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.yai-render__error button {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.yai-render__error button:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
 /* Main body: split layout */
 .yai-render__body {
   flex: 1;
