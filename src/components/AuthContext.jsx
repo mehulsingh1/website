@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { signInWithGoogle } from '../firebase'
 
 const AuthContext = createContext()
 
@@ -76,10 +77,44 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem('nexoryx_user')
+    // Revoke Google session if available
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.disableAutoSelect()
+    }
+  }
+
+  const loginWithGoogle = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const gUser = await signInWithGoogle()
+      if (gUser) {
+        const userData = {
+          name: gUser.displayName || 'Google User',
+          email: gUser.email,
+          photoUrl: gUser.photoURL,
+          plan: 'Pro',
+          tokens: 5000,
+          total_tokens: 10000,
+          joined: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          videos_created: 0,
+          isGoogleUser: true,
+        }
+        setUser(userData)
+        localStorage.setItem('nexoryx_user', JSON.stringify(userData))
+        return true
+      }
+      return false
+    } catch (err) {
+      setError(err.message || 'Google sign-in failed. Please try again.')
+      return false
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, login, signup, logout, loginWithGoogle }}>
       {children}
     </AuthContext.Provider>
   )

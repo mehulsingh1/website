@@ -45,9 +45,13 @@ export default function Profile() {
           className="profile-hero glass-panel"
         >
           <div className="profile-avatar-wrap">
-            <div className="profile-avatar">
-              {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
+            {user.photoUrl ? (
+              <img src={user.photoUrl} alt={user.name} className="profile-avatar-img" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' }} />
+            ) : (
+              <div className="profile-avatar">
+                {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <div className="profile-plan-badge">
               <Shield size={10} /> {user.plan}
             </div>

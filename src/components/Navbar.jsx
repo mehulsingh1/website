@@ -62,8 +62,12 @@ export default function Navbar() {
 
         {user ? (
           <div className="navbar__user-menu">
-            <Link to="/profile" className="navbar__avatar" title={user.name} onClick={closeMenu}>
-              {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            <Link to="/profile" className="navbar__avatar" title={user.name} onClick={closeMenu} style={{ padding: user.photoUrl ? 0 : '', overflow: 'hidden' }}>
+              {user.photoUrl ? (
+                <img src={user.photoUrl} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+              )}
             </Link>
           </div>
         ) : (
