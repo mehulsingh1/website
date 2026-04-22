@@ -4,9 +4,10 @@ Nexoryx FastAPI Backend
 Converts idea2.py Streamlit pipeline into REST + WebSocket endpoints.
 
 Endpoints:
-  POST /api/draft-script    — Groq LLM generates a 3-scene cinematic script
-  WS   /api/ws/produce      — Real-time video production pipeline
-  GET  /api/files/{job_id}/{filename} — Serve generated assets
+  POST /api/draft-script    -- Groq LLM generates a 3-scene cinematic script
+  WS   /api/ws/produce      -- Real-time video production pipeline
+  GET  /api/files/{job_id}/{filename} -- Serve generated assets
+  POST /api/send-welcome     -- Send welcome email via Resend
 """
 
 import os
@@ -24,6 +25,7 @@ import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+import resend
 import replicate
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -44,9 +46,12 @@ os.environ["REQUESTS_CA_BUNDLE"] = ""
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", r"C:\ffmpeg\bin\ffmpeg.exe")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
+
+resend.api_key = RESEND_API_KEY
 
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_DIR.mkdir(exist_ok=True)
@@ -408,3 +413,247 @@ async def serve_file(job_id: str, filename: str):
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "engine": "Nexoryx Pipeline API"}
+
+
+# ═══════════════════════════════════════════════════════════
+# Welcome Email (Resend)
+# ═══════════════════════════════════════════════════════════
+WELCOME_EMAIL_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; background-color:#010103; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#010103; padding:0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
+
+          <!-- Top Accent Bar -->
+          <tr>
+            <td style="height:3px; background:linear-gradient(90deg, #64748b 0%, #94a3b8 50%, #64748b 100%);"></td>
+          </tr>
+
+          <!-- Spacer -->
+          <tr><td style="height:48px;"></td></tr>
+
+          <!-- NEXORYX Logo — Bold, Stylish, Capital -->
+          <tr>
+            <td align="center" style="padding:0 30px;">
+              <h1 style="margin:0; font-size:42px; font-weight:900; letter-spacing:8px; color:#e8eaed; text-transform:uppercase;">
+                NEXO<span style="color:#94a3b8;">RYX</span>
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Tagline with side lines -->
+          <tr>
+            <td align="center" style="padding:16px 60px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="height:1px; background:linear-gradient(to right, transparent, rgba(100,116,139,0.4));"></td>
+                  <td style="padding:0 16px; white-space:nowrap;">
+                    <p style="margin:0; font-size:10px; color:#64748b; letter-spacing:4px; text-transform:uppercase; font-weight:600;">
+                      Cinematic AI Director
+                    </p>
+                  </td>
+                  <td style="height:1px; background:linear-gradient(to left, transparent, rgba(100,116,139,0.4));"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Spacer -->
+          <tr><td style="height:48px;"></td></tr>
+
+          <!-- Hero Banner Card — Pinterest style rounded card -->
+          <tr>
+            <td style="padding:0 24px;">
+              <div style="background:linear-gradient(160deg, #0c0c14 0%, #12121e 40%, #0a0a12 100%); border:1px solid rgba(255,255,255,0.06); border-radius:20px; overflow:hidden;">
+
+                <!-- Inner gradient accent strip -->
+                <div style="height:4px; background:linear-gradient(90deg, transparent, #64748b, #94a3b8, #64748b, transparent);"></div>
+
+                <!-- Welcome Content -->
+                <div style="padding:44px 36px 40px;">
+
+                  <!-- Greeting pill -->
+                  <div style="display:inline-block; padding:6px 18px; border-radius:100px; background:rgba(100,116,139,0.12); border:1px solid rgba(100,116,139,0.2); margin-bottom:20px;">
+                    <span style="font-size:12px; font-weight:600; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">Welcome</span>
+                  </div>
+
+                  <!-- Name — editorial oversized -->
+                  <h2 style="margin:0 0 8px; font-size:32px; color:#e8eaed; font-weight:800; line-height:1.2; letter-spacing:-0.5px;">
+                    Hey, {{USER_NAME}}.
+                  </h2>
+                  <p style="margin:0 0 28px; font-size:15px; color:#64748b; font-weight:500; font-style:italic;">
+                    Your director's chair is ready.
+                  </p>
+
+                  <!-- Body — clean Pinterest-style copy -->
+                  <p style="margin:0 0 32px; font-size:15px; line-height:1.8; color:#8b8d94;">
+                    Nexoryx turns a single idea into a fully rendered cinematic experience --
+                    multi-scene AI video with native audio, built in real time. No editing skills needed.
+                    Just type a topic and watch the magic unfold.
+                  </p>
+
+                  <!-- CTA — pill button, Pinterest aesthetic -->
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td align="center" style="border-radius:100px; background:linear-gradient(135deg, #64748b, #94a3b8);">
+                        <a href="http://localhost:3000"
+                           style="display:inline-block; padding:14px 44px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:1px; text-transform:uppercase;">
+                          Launch Studio &#8594;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Spacer -->
+          <tr><td style="height:24px;"></td></tr>
+
+          <!-- Feature Cards — Pinterest stacked vertical style -->
+          <tr>
+            <td style="padding:0 24px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+
+                <!-- Card 1 -->
+                <tr>
+                  <td style="padding:6px 0;">
+                    <div style="background:#0a0a12; border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:22px 28px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="44" style="vertical-align:top;">
+                            <div style="width:40px; height:40px; border-radius:12px; background:rgba(100,116,139,0.1); border:1px solid rgba(100,116,139,0.15); text-align:center; line-height:40px; font-size:18px;">
+                              &#127916;
+                            </div>
+                          </td>
+                          <td style="padding-left:16px; vertical-align:top;">
+                            <p style="margin:0; font-size:14px; font-weight:700; color:#e8eaed; letter-spacing:0.3px;">AI Video Generation</p>
+                            <p style="margin:4px 0 0; font-size:12px; color:#64748b; line-height:1.5;">One-take cinematic shots stitched into seamless stories</p>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Card 2 -->
+                <tr>
+                  <td style="padding:6px 0;">
+                    <div style="background:#0a0a12; border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:22px 28px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="44" style="vertical-align:top;">
+                            <div style="width:40px; height:40px; border-radius:12px; background:rgba(100,116,139,0.1); border:1px solid rgba(100,116,139,0.15); text-align:center; line-height:40px; font-size:18px;">
+                              &#127911;
+                            </div>
+                          </td>
+                          <td style="padding-left:16px; vertical-align:top;">
+                            <p style="margin:0; font-size:14px; font-weight:700; color:#e8eaed; letter-spacing:0.3px;">Native Audio Synthesis</p>
+                            <p style="margin:4px 0 0; font-size:12px; color:#64748b; line-height:1.5;">AI-generated soundscapes that match every scene perfectly</p>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Card 3 -->
+                <tr>
+                  <td style="padding:6px 0;">
+                    <div style="background:#0a0a12; border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:22px 28px;">
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="44" style="vertical-align:top;">
+                            <div style="width:40px; height:40px; border-radius:12px; background:rgba(100,116,139,0.1); border:1px solid rgba(100,116,139,0.15); text-align:center; line-height:40px; font-size:18px;">
+                              &#9889;
+                            </div>
+                          </td>
+                          <td style="padding-left:16px; vertical-align:top;">
+                            <p style="margin:0; font-size:14px; font-weight:700; color:#e8eaed; letter-spacing:0.3px;">Real-Time Pipeline</p>
+                            <p style="margin:4px 0 0; font-size:12px; color:#64748b; line-height:1.5;">Watch each scene render live as Nexoryx builds your vision</p>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Spacer -->
+          <tr><td style="height:40px;"></td></tr>
+
+          <!-- Footer Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <div style="height:1px; background:rgba(255,255,255,0.04);"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:28px 30px 40px;">
+              <p style="margin:0; font-size:13px; font-weight:700; color:#4a4b52; letter-spacing:3px; text-transform:uppercase;">
+                NEXORYX
+              </p>
+              <p style="margin:8px 0 0; font-size:11px; color:#3a3b42; line-height:1.6;">
+                The Cinematic AI Director<br>
+                You received this because you signed up at Nexoryx.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+@app.post("/api/send-welcome")
+async def send_welcome_email(body: dict):
+    """Send a cinematic welcome email to new users via Resend."""
+    email = body.get("email", "").strip()
+    name = body.get("name", "Director").strip()
+
+    if not email:
+        return JSONResponse({"error": "Email is required"}, status_code=400)
+
+    if not RESEND_API_KEY:
+        print("[WARN] RESEND_API_KEY not set -- skipping welcome email")
+        return JSONResponse({"error": "Email service not configured"}, status_code=503)
+
+    try:
+        html_content = WELCOME_EMAIL_HTML.replace("{{USER_NAME}}", name)
+
+        params = {
+            "from": "Nexoryx <onboarding@resend.dev>",
+            "to": [email],
+            "subject": "Welcome to Nexoryx -- The Cinematic AI Director",
+            "html": html_content,
+        }
+
+        result = resend.Emails.send(params)
+        email_id = result.id if hasattr(result, 'id') else str(result)
+        print(f"[OK] Welcome email sent to {email} (id: {email_id})")
+        return {"success": True, "message": f"Welcome email sent to {email}", "id": email_id}
+
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[ERROR] Failed to send welcome email to {email}: {str(e)}")
+        return JSONResponse(
+            {"error": f"Failed to send email: {str(e)}"},
+            status_code=500,
+        )

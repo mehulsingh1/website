@@ -20,11 +20,11 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setError(null)
     setLoading(true)
-    
+
     // Demo logic: any email + password >= 6 chars
     try {
       await new Promise(resolve => setTimeout(resolve, 800)) // Simulation
-      
+
       if (password.length >= 6) {
         const userData = {
           name: 'Urvashi Mehta',
@@ -102,6 +102,22 @@ export function AuthProvider({ children }) {
         }
         setUser(userData)
         localStorage.setItem('nexoryx_user', JSON.stringify(userData))
+
+        // Send welcome email (first time only, fire-and-forget)
+        const emailKey = `nexoryx_welcome_sent_${gUser.email}`
+        if (!localStorage.getItem(emailKey)) {
+          fetch('http://localhost:8000/api/send-welcome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: gUser.email,
+              name: gUser.displayName || 'Director',
+            }),
+          })
+            .then(() => localStorage.setItem(emailKey, 'true'))
+            .catch((err) => console.warn('Welcome email failed:', err))
+        }
+
         return true
       }
       return false

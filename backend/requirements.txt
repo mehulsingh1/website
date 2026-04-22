@@ -8,3 +8,4 @@ langchain-core
 requests
 urllib3
 aiofiles
+resend
