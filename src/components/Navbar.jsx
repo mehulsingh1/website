@@ -35,8 +35,10 @@ export default function Navbar() {
 
       <div className={`navbar__links ${menuOpen ? 'navbar__links--open' : ''}`}>
         <Link to="/#showcase" className="navbar__link" onClick={closeMenu}>Showcase</Link>
-        <a href="#features" className="navbar__link" onClick={closeMenu}>Features</a>
+        <Link to="/generate" className="navbar__link" onClick={closeMenu}>Quick Generate</Link>
+        <a href="/#features" className="navbar__link" onClick={closeMenu}>Features</a>
         <Link to="/pricing" className="navbar__link" onClick={closeMenu}>Pricing</Link>
+        <Link to="/clip-studio" className="navbar__link" onClick={closeMenu}>Clip Studio</Link>
         <Link to="/history" className="navbar__link" onClick={closeMenu}>History</Link>
 
         <button

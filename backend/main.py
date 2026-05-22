@@ -1,13 +1,19 @@
 """
-Nexoryx FastAPI Backend
-=======================
-Converts idea2.py Streamlit pipeline into REST + WebSocket endpoints.
+Nexoryx FastAPI Backend — Multi-Model AI Video Aggregator
+=========================================================
 
 Endpoints:
-  POST /api/draft-script    -- Groq LLM generates a 3-scene cinematic script
-  WS   /api/ws/produce      -- Real-time video production pipeline
-  GET  /api/files/{job_id}/{filename} -- Serve generated assets
-  POST /api/send-welcome     -- Send welcome email via Resend
+  POST /api/draft-script           -- Groq LLM generates cinematic script
+  WS   /api/ws/produce             -- Real-time video production pipeline
+  GET  /api/files/{job_id}/{fn}    -- Serve generated assets
+  POST /api/send-welcome           -- Welcome email via Resend
+  GET  /api/models                 -- List available video models
+  POST /api/quick-generate         -- Single-video generation
+  GET  /api/job/{job_id}/status    -- Poll quick-generate job status
+  POST /api/search-clips           -- Search Pexels/Pixabay stock clips
+  POST /api/generate-voiceover     -- ElevenLabs TTS voiceover
+  GET  /api/voices                 -- List ElevenLabs voices
+  POST /api/export-clip-project    -- Stitch clips + voiceover
 """
 
 import os
@@ -30,6 +36,22 @@ import replicate
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
+# New multi-model SDKs (imported lazily where possible)
+try:
+    import fal_client
+except ImportError:
+    fal_client = None
+
+try:
+    from runwayml import RunwayML
+except ImportError:
+    RunwayML = None
+
+try:
+    from elevenlabs.client import ElevenLabs as ElevenLabsClient
+except ImportError:
+    ElevenLabsClient = None
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -47,9 +69,16 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH", r"C:\ffmpeg\bin\ffmpeg.exe")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+FAL_KEY = os.getenv("FAL_KEY", "")
+RUNWAY_API_KEY = os.getenv("RUNWAY_API_KEY", "")
+PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
+PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
+if FAL_KEY:
+    os.environ["FAL_KEY"] = FAL_KEY
 
 resend.api_key = RESEND_API_KEY
 
@@ -66,6 +95,171 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Active Jobs Store (in-memory) ─────────────────────────
+active_jobs: dict = {}   # job_id -> { status, progress, video_url, error }
+
+# ═══════════════════════════════════════════════════════════
+# VIDEO MODEL REGISTRY
+# ═══════════════════════════════════════════════════════════
+VIDEO_MODELS = {
+    # ── Replicate Models ──
+    "grok-imagine-video": {
+        "name": "Grok Imagine Video", "provider": "xAI",
+        "provider_logo": "xai", "platform": "replicate",
+        "replicate_id": "xai/grok-imagine-video",
+        "quality": "4K", "speed": "Balanced", "cost_per_sec": 0.25,
+        "supports_image": True, "supports_text": True,
+    },
+    "wan-2.1": {
+        "name": "Wan 2.1", "provider": "WaveSpeed AI",
+        "provider_logo": "wavespeed", "platform": "replicate",
+        "replicate_id": "wavespeedai/wan-2.1-t2v-720p",
+        "quality": "HD", "speed": "Fast", "cost_per_sec": 0.10,
+        "supports_image": False, "supports_text": True,
+    },
+    "hunyuan-video": {
+        "name": "Hunyuan Video", "provider": "Tencent",
+        "provider_logo": "tencent", "platform": "replicate",
+        "replicate_id": "tencent/hunyuan-video",
+        "quality": "HD", "speed": "Quality", "cost_per_sec": 0.18,
+        "supports_image": False, "supports_text": True,
+    },
+    "minimax-video-01": {
+        "name": "Minimax Video-01", "provider": "Minimax",
+        "provider_logo": "minimax", "platform": "replicate",
+        "replicate_id": "minimax/video-01",
+        "quality": "HD", "speed": "Balanced", "cost_per_sec": 0.15,
+        "supports_image": True, "supports_text": True,
+    },
+    "kling-1.6-pro": {
+        "name": "Kling 1.6 Pro", "provider": "Kuaishou",
+        "provider_logo": "kling", "platform": "replicate",
+        "replicate_id": "kwaivgi/kling-v2.1",
+        "quality": "4K", "speed": "Quality", "cost_per_sec": 0.30,
+        "supports_image": True, "supports_text": True,
+    },
+    "ltx-video": {
+        "name": "LTX Video", "provider": "Lightricks",
+        "provider_logo": "lightricks", "platform": "replicate",
+        "replicate_id": "lightricks/ltx-video",
+        "quality": "HD", "speed": "Fast", "cost_per_sec": 0.08,
+        "supports_image": False, "supports_text": True,
+    },
+    # ── fal.ai Models ──
+    "veo-3": {
+        "name": "Veo 3", "provider": "Google DeepMind",
+        "provider_logo": "google", "platform": "fal",
+        "fal_id": "fal-ai/veo3",
+        "quality": "4K", "speed": "Quality", "cost_per_sec": 0.35,
+        "supports_image": True, "supports_text": True,
+    },
+    "cogvideox-5b": {
+        "name": "CogVideoX-5B", "provider": "THUDM",
+        "provider_logo": "thudm", "platform": "fal",
+        "fal_id": "fal-ai/cogvideox-5b",
+        "quality": "HD", "speed": "Balanced", "cost_per_sec": 0.12,
+        "supports_image": True, "supports_text": True,
+    },
+    "pika-2.2": {
+        "name": "Pika 2.2", "provider": "Pika Labs (via fal.ai)",
+        "provider_logo": "pika", "platform": "fal",
+        "fal_id": "fal-ai/pika/v2.2",
+        "quality": "HD", "speed": "Fast", "cost_per_sec": 0.14,
+        "supports_image": True, "supports_text": True,
+    },
+    # ── Runway ──
+    "gen4-turbo": {
+        "name": "Gen-4 Turbo", "provider": "Runway ML",
+        "provider_logo": "runway", "platform": "runway",
+        "runway_model": "gen4_turbo",
+        "quality": "4K", "speed": "Fast", "cost_per_sec": 0.20,
+        "supports_image": True, "supports_text": True,
+    },
+}
+
+
+# ─── Unified Model Dispatcher ─────────────────────────────
+def generate_video_with_model(
+    prompt: str, model_id: str, image_input: str | None,
+    index: int, job_dir: Path,
+) -> str:
+    """Route video generation to the correct provider based on model_id."""
+    model = VIDEO_MODELS.get(model_id)
+    if not model:
+        raise ValueError(f"Unknown model: {model_id}")
+
+    platform = model["platform"]
+    filename = f"scene_{index}.mp4"
+    filepath = str(job_dir / filename)
+
+    if platform == "replicate":
+        return _replicate_generate(prompt, model, image_input, filepath)
+    elif platform == "fal":
+        return _fal_generate(prompt, model, image_input, filepath)
+    elif platform == "runway":
+        return _runway_generate(prompt, model, image_input, filepath)
+    else:
+        raise ValueError(f"Unknown platform: {platform}")
+
+
+def _replicate_generate(prompt, model, image_input, filepath):
+    inp = {"prompt": prompt}
+    if image_input and model.get("supports_image"):
+        inp["image"] = image_input
+    prediction = replicate.predictions.create(
+        model=model["replicate_id"], input=inp,
+    )
+    while prediction.status not in ["succeeded", "failed", "canceled"]:
+        time.sleep(5)
+        prediction.reload()
+    if prediction.status != "succeeded":
+        raise Exception(f"Replicate failed: {prediction.error}")
+    output_url = str(prediction.output)
+    with open(filepath, "wb") as f:
+        f.write(robust_download(output_url, timeout=300))
+    return filepath
+
+
+def _fal_generate(prompt, model, image_input, filepath):
+    if not fal_client:
+        raise ImportError("fal-client not installed")
+    inp = {"prompt": prompt}
+    if image_input and model.get("supports_image"):
+        inp["image_url"] = image_input
+    result = fal_client.subscribe(model["fal_id"], arguments=inp)
+    video_url = None
+    if isinstance(result, dict):
+        video_url = result.get("video", {}).get("url") or result.get("video_url")
+    if not video_url:
+        raise Exception(f"fal.ai returned no video URL: {result}")
+    with open(filepath, "wb") as f:
+        f.write(robust_download(video_url, timeout=300))
+    return filepath
+
+
+def _runway_generate(prompt, model, image_input, filepath):
+    if not RunwayML:
+        raise ImportError("runwayml not installed")
+    client = RunwayML(api_key=RUNWAY_API_KEY)
+    kwargs = {"model": model["runway_model"], "promptText": prompt}
+    if image_input and model.get("supports_image"):
+        task = client.image_to_video.create(promptImage=image_input, **kwargs)
+    else:
+        task = client.text_to_video.create(**kwargs)
+    # Poll for completion
+    task_result = client.tasks.retrieve(task.id)
+    while task_result.status not in ["SUCCEEDED", "FAILED"]:
+        time.sleep(5)
+        task_result = client.tasks.retrieve(task.id)
+    if task_result.status != "SUCCEEDED":
+        raise Exception(f"Runway failed: {task_result.failure}")
+    output_url = task_result.output[0] if task_result.output else None
+    if not output_url:
+        raise Exception("Runway returned no output URL")
+    with open(filepath, "wb") as f:
+        f.write(robust_download(str(output_url), timeout=300))
+    return filepath
 
 # ─── Helpers (from idea2.py) ──────────────────────────────
 def robust_download(url: str, timeout: int = 300) -> bytes:
@@ -177,7 +371,7 @@ def _build_display_script(topic: str, scene_data: dict) -> str:
 async def produce_video(ws: WebSocket):
     """
     WebSocket endpoint for the full production pipeline.
-    Client sends: { "job_id": "...", "scene_data": {...} }
+    Client sends: { "job_id": "...", "scene_data": {...}, "model_id": "..." }
     Server streams back step-by-step updates.
     """
     await ws.accept()
@@ -188,6 +382,8 @@ async def produce_video(ws: WebSocket):
         payload = json.loads(raw)
         job_id = payload["job_id"]
         scene_data = payload["scene_data"]
+        model_id = payload.get("model_id", "grok-imagine-video")
+        model_info = VIDEO_MODELS.get(model_id, VIDEO_MODELS["grok-imagine-video"])
 
         # Create job directory
         job_dir = STATIC_DIR / job_id
@@ -244,12 +440,13 @@ async def produce_video(ws: WebSocket):
                 "step": f"scene_{scene_num}",
                 "status": "rendering",
                 "scene_index": i,
-                "message": f"Animating Scene {scene_num} via Grok Imagine Video (with Audio)...",
+                "message": f"Animating Scene {scene_num} via {model_info['name']}...",
             })
 
             vid_path = await asyncio.to_thread(
-                _generate_video_segment,
+                generate_video_with_model,
                 segment["video_prompt"],
+                model_id,
                 current_input,
                 scene_num,
                 job_dir,
@@ -657,3 +854,279 @@ async def send_welcome_email(body: dict):
             {"error": f"Failed to send email: {str(e)}"},
             status_code=500,
         )
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — List Video Models
+# ═══════════════════════════════════════════════════════════
+@app.get("/api/models")
+async def list_models():
+    """Return all available video generation models."""
+    models = []
+    for mid, m in VIDEO_MODELS.items():
+        models.append({
+            "id": mid,
+            "name": m["name"],
+            "provider": m["provider"],
+            "provider_logo": m["provider_logo"],
+            "quality": m["quality"],
+            "speed": m["speed"],
+            "cost_per_sec": m["cost_per_sec"],
+            "supports_image": m["supports_image"],
+            "supports_text": m["supports_text"],
+        })
+    return {"models": models}
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — Quick Generate (single video)
+# ═══════════════════════════════════════════════════════════
+@app.post("/api/quick-generate")
+async def quick_generate(body: dict):
+    """Start a single-video generation job. Returns job_id to poll."""
+    prompt = body.get("prompt", "").strip()
+    model_id = body.get("model_id", "wan-2.1")
+    duration = body.get("duration", 5)
+    style = body.get("style", "Cinematic")
+
+    if not prompt:
+        return JSONResponse({"error": "Prompt is required"}, status_code=400)
+    if model_id not in VIDEO_MODELS:
+        return JSONResponse({"error": f"Unknown model: {model_id}"}, status_code=400)
+
+    job_id = str(uuid.uuid4())[:8]
+    job_dir = STATIC_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    active_jobs[job_id] = {
+        "status": "processing", "progress": 0,
+        "video_url": None, "error": None,
+        "model_id": model_id, "prompt": prompt,
+    }
+
+    # Run generation in background
+    full_prompt = f"{prompt}. Style: {style}. Duration: ~{duration} seconds."
+
+    async def _run():
+        try:
+            active_jobs[job_id]["progress"] = 10
+            filepath = await asyncio.to_thread(
+                generate_video_with_model,
+                full_prompt, model_id, None, 1, job_dir,
+            )
+            active_jobs[job_id]["progress"] = 100
+            active_jobs[job_id]["status"] = "done"
+            active_jobs[job_id]["video_url"] = f"/api/files/{job_id}/scene_1.mp4"
+        except Exception as e:
+            traceback.print_exc()
+            active_jobs[job_id]["status"] = "failed"
+            active_jobs[job_id]["error"] = str(e)
+
+    asyncio.create_task(_run())
+    return {"job_id": job_id, "status": "processing"}
+
+
+@app.get("/api/job/{job_id}/status")
+async def job_status(job_id: str):
+    """Poll the status of a quick-generate job."""
+    job = active_jobs.get(job_id)
+    if not job:
+        return JSONResponse({"error": "Job not found"}, status_code=404)
+    return job
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — Search Stock Clips (Pexels + Pixabay)
+# ═══════════════════════════════════════════════════════════
+@app.post("/api/search-clips")
+async def search_clips(body: dict):
+    """Search Pexels and/or Pixabay for stock video clips."""
+    query = body.get("query", "").strip()
+    source = body.get("source", "pexels")  # pexels | pixabay | all
+    per_page = min(body.get("per_page", 15), 30)
+
+    if not query:
+        return JSONResponse({"error": "Query is required"}, status_code=400)
+
+    results = []
+
+    if source in ("pexels", "all") and PEXELS_API_KEY:
+        try:
+            r = requests.get(
+                "https://api.pexels.com/videos/search",
+                headers={"Authorization": PEXELS_API_KEY},
+                params={"query": query, "per_page": per_page},
+                timeout=10,
+            )
+            if r.ok:
+                for v in r.json().get("videos", []):
+                    files = v.get("video_files", [])
+                    best = max(files, key=lambda f: f.get("width", 0)) if files else None
+                    results.append({
+                        "id": f"pexels-{v['id']}",
+                        "source": "Pexels",
+                        "thumbnail": v.get("image", ""),
+                        "url": best["link"] if best else "",
+                        "duration": v.get("duration", 0),
+                        "width": best.get("width", 0) if best else 0,
+                        "height": best.get("height", 0) if best else 0,
+                        "license": "Pexels License (Free)",
+                    })
+        except Exception as e:
+            print(f"[WARN] Pexels search failed: {e}")
+
+    if source in ("pixabay", "all") and PIXABAY_API_KEY:
+        try:
+            r = requests.get(
+                "https://pixabay.com/api/videos/",
+                params={"key": PIXABAY_API_KEY, "q": query, "per_page": per_page},
+                timeout=10,
+            )
+            if r.ok:
+                for v in r.json().get("hits", []):
+                    vids = v.get("videos", {})
+                    large = vids.get("large", {})
+                    results.append({
+                        "id": f"pixabay-{v['id']}",
+                        "source": "Pixabay",
+                        "thumbnail": f"https://i.vimeocdn.com/video/{v['picture_id']}_640x360.jpg",
+                        "url": large.get("url", ""),
+                        "duration": v.get("duration", 0),
+                        "width": large.get("width", 0),
+                        "height": large.get("height", 0),
+                        "license": "Pixabay License (Free)",
+                    })
+        except Exception as e:
+            print(f"[WARN] Pixabay search failed: {e}")
+
+    return {"clips": results, "total": len(results)}
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — ElevenLabs Voices + Voiceover
+# ═══════════════════════════════════════════════════════════
+@app.get("/api/voices")
+async def list_voices():
+    """Return available ElevenLabs voices."""
+    if not ElevenLabsClient or not ELEVENLABS_API_KEY:
+        # Return defaults when API key not configured
+        return {"voices": [
+            {"voice_id": "JBFqnCBsd6RMkjVDRZzb", "name": "George", "category": "premade"},
+            {"voice_id": "EXAVITQu4vr4xnSDxMaL", "name": "Sarah", "category": "premade"},
+            {"voice_id": "onwK4e9ZLuTAKqWW03F9", "name": "Daniel", "category": "premade"},
+            {"voice_id": "pFZP5JQG7iQjIQuC4Bku", "name": "Lily", "category": "premade"},
+        ]}
+    try:
+        client = ElevenLabsClient(api_key=ELEVENLABS_API_KEY)
+        voices_resp = client.voices.get_all()
+        voices = [{"voice_id": v.voice_id, "name": v.name, "category": v.category}
+                  for v in voices_resp.voices[:20]]
+        return {"voices": voices}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/generate-voiceover")
+async def generate_voiceover(body: dict):
+    """Generate TTS voiceover via ElevenLabs."""
+    script = body.get("script", "").strip()
+    voice_id = body.get("voice_id", "JBFqnCBsd6RMkjVDRZzb")
+    speed = body.get("speed", 1.0)
+
+    if not script:
+        return JSONResponse({"error": "Script text is required"}, status_code=400)
+    if not ElevenLabsClient or not ELEVENLABS_API_KEY:
+        return JSONResponse({"error": "ElevenLabs not configured"}, status_code=503)
+
+    job_id = str(uuid.uuid4())[:8]
+    job_dir = STATIC_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    audio_path = str(job_dir / "voiceover.mp3")
+
+    try:
+        client = ElevenLabsClient(api_key=ELEVENLABS_API_KEY)
+        audio_gen = client.text_to_speech.convert(
+            text=script,
+            voice_id=voice_id,
+            model_id="eleven_multilingual_v2",
+            output_format="mp3_44100_128",
+        )
+        with open(audio_path, "wb") as f:
+            for chunk in audio_gen:
+                f.write(chunk)
+        return {
+            "audio_url": f"/api/files/{job_id}/voiceover.mp3",
+            "job_id": job_id,
+        }
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — Export Clip Project (stitch clips + voiceover)
+# ═══════════════════════════════════════════════════════════
+@app.post("/api/export-clip-project")
+async def export_clip_project(body: dict):
+    """Download clips, stitch them, overlay voiceover audio, export final MP4."""
+    clip_urls = body.get("clips", [])  # list of video URLs
+    voiceover_url = body.get("voiceover_url", None)
+
+    if not clip_urls:
+        return JSONResponse({"error": "No clips provided"}, status_code=400)
+
+    job_id = str(uuid.uuid4())[:8]
+    job_dir = STATIC_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Download all clips
+        clip_paths = []
+        for i, url in enumerate(clip_urls):
+            clip_path = str(job_dir / f"clip_{i}.mp4")
+            with open(clip_path, "wb") as f:
+                f.write(robust_download(url, timeout=120))
+            clip_paths.append(clip_path)
+
+        # Stitch clips
+        stitched_path = str(job_dir / "stitched.mp4")
+        list_file = str(job_dir / "clips.txt")
+        with open(list_file, "w") as f:
+            for cp in clip_paths:
+                f.write(f"file '{cp}'\n")
+        subprocess.run(
+            [FFMPEG_PATH, "-y", "-f", "concat", "-safe", "0",
+             "-i", list_file, "-c", "copy", stitched_path],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+
+        final_path = stitched_path
+
+        # Overlay voiceover if provided
+        if voiceover_url:
+            audio_path = str(job_dir / "voiceover.mp3")
+            # If it's a local API URL, resolve to filesystem path
+            if voiceover_url.startswith("/api/files/"):
+                parts = voiceover_url.replace("/api/files/", "").split("/")
+                audio_path = str(STATIC_DIR / parts[0] / parts[1])
+            else:
+                with open(audio_path, "wb") as f:
+                    f.write(robust_download(voiceover_url, timeout=60))
+
+            final_with_audio = str(job_dir / "nexoryx_final.mp4")
+            subprocess.run(
+                [FFMPEG_PATH, "-y", "-i", stitched_path, "-i", audio_path,
+                 "-c:v", "copy", "-c:a", "aac", "-shortest", final_with_audio],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            final_path = final_with_audio
+
+        return {
+            "video_url": f"/api/files/{job_id}/{Path(final_path).name}",
+            "download_url": f"/api/files/{job_id}/{Path(final_path).name}",
+            "job_id": job_id,
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)

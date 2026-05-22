@@ -4,11 +4,12 @@ import {
   Trash2, Clock, RefreshCw, Film, Plus, Camera, Type, Wand2,
   Volume2, VolumeX, Maximize2, SkipBack, SkipForward,
   ChevronLeft, ChevronRight, Layers, Sparkles, Settings,
-  Copy, Move, Palette
+  Copy, Move, Palette, Image, Upload
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useHistory } from '../components/HistoryContext'
+import ModelSelector from '../components/ModelSelector'
 
 const MOCK_VIDEOS = [
   "/generation.mp4",
@@ -84,6 +85,7 @@ export default function Architect() {
   const [isCompiling, setIsCompiling] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [videoDuration, setVideoDuration] = useState(0)
+  const [selectedModel, setSelectedModel] = useState('grok-imagine-video')
 
   const selectedScene = scenes.find(s => s.id === selectedId) || scenes[0]
   const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
@@ -147,11 +149,41 @@ export default function Architect() {
     }, 1200)
   }
 
-  const handleRegenerate = (id) => {
+  const handleRegenerate = async (id) => {
     setRegeneratingIds(prev => [...prev, id])
-    setTimeout(() => {
-      setRegeneratingIds(prev => prev.filter(r => r !== id))
-    }, 2500)
+    const scene = scenes.find(s => s.id === id)
+    
+    try {
+      if (scene) {
+        await fetch('/api/quick-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: scene.prompt,
+            model_id: selectedModel,
+            duration: scene.duration,
+            style: scene.style,
+          })
+        })
+      }
+    } catch (err) {
+      console.error('Regenerate failed:', err)
+    } finally {
+      setTimeout(() => {
+        setRegeneratingIds(prev => prev.filter(r => r !== id))
+      }, 3000)
+    }
+  }
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        updateScene(selectedScene.id, { imageInput: reader.result, promptMode: 'image' })
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const handleCompile = () => {
@@ -364,9 +396,49 @@ export default function Architect() {
 
             {/* Scene Prompt */}
             <div className="arch-field">
-              <label className="arch-field__label">
-                <Wand2 size={12} /> Scene Prompt
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label className="arch-field__label" style={{ marginBottom: 0 }}>
+                  <Wand2 size={12} /> Scene Prompt
+                </label>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button 
+                    className={`arch-chip ${selectedScene.promptMode !== 'image' ? 'arch-chip--active' : ''}`}
+                    onClick={() => updateScene(selectedScene.id, { promptMode: 'text' })}
+                    style={{ padding: '2px 8px', fontSize: 10 }}
+                  >
+                    Text
+                  </button>
+                  <button 
+                    className={`arch-chip ${selectedScene.promptMode === 'image' ? 'arch-chip--active' : ''}`}
+                    onClick={() => updateScene(selectedScene.id, { promptMode: 'image' })}
+                    style={{ padding: '2px 8px', fontSize: 10 }}
+                  >
+                    Image
+                  </button>
+                </div>
+              </div>
+
+              {selectedScene.promptMode === 'image' && (
+                <div style={{ marginBottom: 12 }}>
+                  {selectedScene.imageInput ? (
+                    <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <img src={selectedScene.imageInput} alt="Upload" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button onClick={() => updateScene(selectedScene.id, { imageInput: null })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: 4, color: 'white' }}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => document.getElementById('arch-file-upload').click()}
+                      style={{ width: '100%', height: 60, border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#8b8d94', fontSize: 12 }}
+                    >
+                      <Upload size={14} style={{ marginRight: 6 }} /> Upload Image
+                    </div>
+                  )}
+                  <input id="arch-file-upload" type="file" style={{ display: 'none' }} accept="image/*" onChange={handleImageUpload} />
+                </div>
+              )}
+
               <textarea
                 className="arch-field__textarea"
                 value={selectedScene.prompt}
@@ -442,6 +514,11 @@ export default function Architect() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Model Selector */}
+            <div className="arch-field" style={{ marginTop: 16 }}>
+              <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="compact" />
             </div>
 
             {/* Regenerate */}

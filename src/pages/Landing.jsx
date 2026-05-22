@@ -6,19 +6,38 @@ import {
   Layers, Bot, Clapperboard, Loader2,
   Zap, Eye, ArrowRight, ArrowLeft, Pencil,
   Download, RotateCcw, CheckCircle2, Send,
-  MessageSquare, Video, Wand2, AlertTriangle
+  MessageSquare, Video, Wand2, AlertTriangle,
+  Plus, X
 } from 'lucide-react'
+import ModelSelector from '../components/ModelSelector'
 
 /* ────────────────────────────────────────────────────────
-   STATUS MESSAGES SHOWN WHILE GROQ IS WORKING
+   STATUS MESSAGES SHOWN WHILE NEXORYX IS WORKING
    ──────────────────────────────────────────────────────── */
 const SCRIPT_GEN_STEPS = [
-  'Connecting to Groq LLM...',
-  'Understanding your topic...',
+  'Initializing Nexoryx Engine...',
+  'Analyzing your creative vision...',
   'Crafting the narrative arc...',
   'Building scene structure...',
-  'Generating audio-visual script...',
+  'Generating cinematic script...',
 ]
+
+const SCENE_FRAMES = [
+  '/frame1.png', '/frame2.png', '/frame3.png',
+  '/frame4.png', '/frame5.png', '/frame6.png',
+]
+
+const SIMULATED_SCRIPT = {
+  origin_image_prompt: 'A young man in a plaid flannel shirt sits on weathered rocks at the edge of a dark river gorge, overhead drone shot, golden hour side-lighting, moody cinematic color grade.',
+  segments: [
+    { video_prompt: 'Slow overhead drone descent — the young man sits on the cliff edge, staring into the dark water below. Sunlight sparkles on the rippling surface. The camera pushes in slowly, building tension. Atmospheric ambient score.' },
+    { video_prompt: 'Wide angle from below — the man leaps off the rocky cliff, arms outstretched, plaid shirt billowing. Camera tracks his fall in slow motion against the towering rock face. Water rushes up to meet him. Impact score builds.' },
+    { video_prompt: 'Underwater POV — murky green depths. The man turns to find a massive great white shark looming directly behind him, jaws slightly parted. Volumetric light rays pierce from above. Tension reaches peak. Deep bass rumble.' },
+    { video_prompt: 'Dynamic underwater tracking — the man grapples with the shark in a cloud of bubbles. His hands push against the creature as it thrashes. Adrenaline-fueled handheld camera movement. Heart-pounding percussion.' },
+    { video_prompt: 'Surface-level tracking shot — the shark lunges from the churning water, mouth wide open, as the man desperately claws his way onto the muddy riverbank. Water explodes around them. Frantic string crescendo.' },
+    { video_prompt: 'Close-up portrait — the man lies on the dried riverbank, soaked and covered in mud, catching his breath. He looks back at the water where the shark\'s shadow fades. Golden hour backlight. Score resolves to quiet piano.' },
+  ],
+}
 
 /* ────────────────────────────────────────────────────────
    SHOWCASE & FEATURES (static landing content – unchanged)
@@ -26,24 +45,24 @@ const SCRIPT_GEN_STEPS = [
 const SHOWCASE_ITEMS = [
   {
     id: 1,
-    prompt: 'A cyberpunk city at dusk, neon reflections on rain-soaked streets, cinematic drone flyover',
-    duration: '12s',
+    prompt: 'Luxury cinematic close-up, gold rings on weathered hands cradling a whiskey glass, warm moody lighting',
+    duration: '45s',
     model: 'Nexoryx v2',
     video: '/generation.mp4',
   },
   {
     id: 2,
-    prompt: 'Golden hour desert landscape, ancient ruins emerging from sand, slow dolly push',
-    duration: '8s',
+    prompt: 'Portrait of a man in a dark suit and glasses, city bokeh lights at night, shallow depth of field',
+    duration: '60s',
     model: 'Nexoryx v2',
     video: '/generation1.mp4',
   },
   {
     id: 3,
-    prompt: 'Underwater bioluminescent forest, ethereal particles floating, macro lens cinematic',
-    duration: '15s',
+    prompt: 'Eating maggi fall into river,fighnting an shark,running away from it to the cliff',
+    duration: '45s',
     model: 'Nexoryx Pro',
-    video: '/final.mp4',
+    video: '/new_generation.mp4',
   },
 ]
 
@@ -73,13 +92,17 @@ export default function Landing() {
 
   /* ---- Core state ---- */
   const [topic, setTopic] = useState('')
+  const [uploadedImage, setUploadedImage] = useState(null)
+  const fileInputRef = useRef(null)
   // Phases: idle | generating-script | review-script | generating-video | video-ready
   const [phase, setPhase] = useState('idle')
-
-  /* ---- Script data from Groq ---- */
+  const [storyTitle, setStoryTitle] = useState('')
+  const [selectedModel, setSelectedModel] = useState('grok-imagine-video')
   const [jobId, setJobId] = useState(null)
-  const [sceneData, setSceneData] = useState(null)     // JSON from Groq
-  const [displayScript, setDisplayScript] = useState('') // formatted text
+
+  /* ---- Script data ---- */
+  const [sceneData, setSceneData] = useState(null)
+  const [displayScript, setDisplayScript] = useState('')
   const [scriptError, setScriptError] = useState(null)
 
   /* ---- Generation UI state ---- */
@@ -90,17 +113,18 @@ export default function Landing() {
 
   /* ---- Production pipeline state ---- */
   const [consoleLog, setConsoleLog] = useState([])
-  const [sceneStatuses, setSceneStatuses] = useState({})  // { scene_1: {status, videoUrl}, ... }
+  const [sceneStatuses, setSceneStatuses] = useState({})
   const [originImageUrl, setOriginImageUrl] = useState(null)
   const [activeStep, setActiveStep] = useState('')
   const [videoProgress, setVideoProgress] = useState(0)
   const [finalVideoUrl, setFinalVideoUrl] = useState(null)
   const [pipelineError, setPipelineError] = useState(null)
-  const wsRef = useRef(null)
+  const [completedFrames, setCompletedFrames] = useState([])
+  const simTimersRef = useRef([])
   const chatContainerRef = useRef(null)
 
-  /* ──────────────────────────────────────────────────────
-     PHASE 1: Generate Script via Groq (real API call)
+   /* ──────────────────────────────────────────────────────
+     PHASE 1: Generate Script (REAL API)
      ────────────────────────────────────────────────────── */
   const startPipeline = async () => {
     if (!topic.trim() || phase !== 'idle') return
@@ -112,55 +136,59 @@ export default function Landing() {
     setSceneData(null)
     setIsEditing(false)
 
-    // Animate progress steps while waiting
+    // Animate progress steps while API call is in flight
     let stepIdx = 0
     const stepTimer = setInterval(() => {
       stepIdx = Math.min(stepIdx + 1, SCRIPT_GEN_STEPS.length - 1)
       setGenStep(stepIdx)
-    }, 800)
+    }, 700)
 
     let prog = 0
     const progTimer = setInterval(() => {
-      prog = Math.min(prog + 1, 90) // cap at 90% until real response
+      prog = Math.min(prog + 1, 90)
       setGenProgress(prog)
-    }, 80)
+    }, 100)
 
     try {
       const res = await fetch('/api/draft-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: topic.trim() }),
+        body: JSON.stringify({ topic }),
       })
+      const data = await res.json()
 
       clearInterval(stepTimer)
       clearInterval(progTimer)
 
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Failed to generate script')
+      if (data.error) {
+        setScriptError(data.error)
+        setPhase('idle')
+        return
       }
 
-      const data = await res.json()
       setGenProgress(100)
       setJobId(data.job_id)
+      setStoryTitle(topic)
       setSceneData(data.scene_data)
-      setDisplayScript(data.display_script)
-
-      // Brief pause to show 100%
+      setDisplayScript(data.display_script || '')
       setTimeout(() => setPhase('review-script'), 400)
-    } catch (e) {
+    } catch (err) {
       clearInterval(stepTimer)
       clearInterval(progTimer)
-      setScriptError(e.message)
+      setScriptError(err.message || 'Failed to connect to Nexoryx API')
       setPhase('idle')
     }
   }
 
+  const addConsoleMsg = (text, type = 'system', frameUrl = null) => {
+    setConsoleLog(prev => [...prev, { text, type, frameUrl, id: Date.now() + Math.random() }])
+  }
+
   /* ──────────────────────────────────────────────────────
-     PHASE 3: Production via WebSocket (real pipeline)
+     PHASE 3: Production Pipeline (REAL WebSocket)
      ────────────────────────────────────────────────────── */
   const startVideoGeneration = useCallback(() => {
-    if (!sceneData || !jobId) return
+    if (!sceneData) return
     setPhase('generating-video')
     setConsoleLog([])
     setSceneStatuses({})
@@ -169,87 +197,70 @@ export default function Landing() {
     setVideoProgress(0)
     setFinalVideoUrl(null)
     setPipelineError(null)
+    setCompletedFrames([])
 
-    // Open WebSocket
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${protocol}://${window.location.host}/api/ws/produce`)
-    wsRef.current = ws
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${wsProtocol}//${window.location.host}/api/ws/produce`
+    const ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {
-      // Send the approved script
-      ws.send(JSON.stringify({ job_id: jobId, scene_data: sceneData }))
+      ws.send(JSON.stringify({
+        job_id: jobId || 'live-' + Date.now(),
+        scene_data: sceneData,
+        model_id: selectedModel,
+      }))
       addConsoleMsg('→ Connected to Nexoryx Pipeline Engine...', 'system')
-      addConsoleMsg('→ Script approved — sending to production...', 'system')
     }
 
     ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data)
-        handlePipelineMessage(msg)
-      } catch (e) {
-        console.error('WS parse error:', e)
+      const msg = JSON.parse(event.data)
+      const progress = msg.progress || 0
+      setVideoProgress(progress)
+
+      if (msg.step === 'origin_image') {
+        setActiveStep('origin_image')
+        if (msg.status === 'done') {
+          setOriginImageUrl(msg.image_url)
+          addConsoleMsg('  ✓ Origin frame generated', 'done', msg.image_url)
+          setCompletedFrames(prev => [...prev, msg.image_url])
+        } else {
+          addConsoleMsg('▸ Generating origin anchor frame...', 'render')
+        }
+      } else if (msg.step?.startsWith('scene_')) {
+        setActiveStep(msg.step)
+        if (msg.status === 'done') {
+          setSceneStatuses(prev => ({ ...prev, [msg.step]: { status: 'done', videoUrl: msg.video_url } }))
+          addConsoleMsg(`  ✓ ${msg.step.replace('_', ' ')} complete`, 'done')
+        } else if (msg.status === 'rendering') {
+          setSceneStatuses(prev => ({ ...prev, [msg.step]: { status: 'rendering' } }))
+          addConsoleMsg(`▸ ${msg.message}`, 'render')
+        }
+      } else if (msg.step === 'stitching') {
+        setActiveStep('stitching')
+        addConsoleMsg('▸ Stitching all scenes via ffmpeg...', 'render')
+      } else if (msg.step === 'final' && msg.status === 'done') {
+        setFinalVideoUrl(msg.video_url || msg.download_url)
+        addConsoleMsg('✦ Video ready — One-Take Complete!', 'final')
+        setTimeout(() => setPhase('video-ready'), 1500)
+      } else if (msg.step === 'error') {
+        setPipelineError(msg.message)
+        addConsoleMsg(`✗ ${msg.message}`, 'error')
+      } else if (msg.step === 'cooldown') {
+        addConsoleMsg(`⏳ ${msg.message}`, 'system')
       }
     }
 
     ws.onerror = () => {
-      setPipelineError('WebSocket connection error. Is the backend running?')
-      addConsoleMsg('✗ Connection error — check backend', 'error')
+      setPipelineError('WebSocket connection failed. Is the backend running?')
     }
 
     ws.onclose = () => {
-      console.log('WebSocket closed')
-    }
-  }, [sceneData, jobId])
-
-  const addConsoleMsg = (text, type = 'system') => {
-    setConsoleLog(prev => [...prev, { text, type, id: Date.now() + Math.random() }])
-  }
-
-  const handlePipelineMessage = (msg) => {
-    const { step, status, message, progress } = msg
-
-    // Update progress
-    if (progress !== undefined) setVideoProgress(progress)
-    setActiveStep(step)
-
-    // Add to console
-    if (message) {
-      const type = status === 'done' ? 'done'
-        : status === 'failed' ? 'error'
-        : status === 'waiting' ? 'system'
-        : 'render'
-      addConsoleMsg(status === 'done' ? `  ✓ ${message}` : `▸ ${message}`, type)
+      // Normal close after pipeline completes
     }
 
-    // Handle specific steps
-    if (step === 'origin_image' && status === 'done') {
-      setOriginImageUrl(msg.image_url)
-    }
-
-    if (step?.startsWith('scene_') && status === 'rendering') {
-      const sceneKey = step
-      setSceneStatuses(prev => ({ ...prev, [sceneKey]: { status: 'rendering' } }))
-    }
-
-    if (step?.startsWith('scene_') && status === 'done') {
-      const sceneKey = step
-      setSceneStatuses(prev => ({
-        ...prev,
-        [sceneKey]: { status: 'done', videoUrl: msg.video_url }
-      }))
-    }
-
-    if (step === 'final' && status === 'done') {
-      setFinalVideoUrl(msg.video_url)
-      setVideoProgress(100)
-      addConsoleMsg('✦ Video ready — One-Take Complete!', 'final')
-      setTimeout(() => setPhase('video-ready'), 1500)
-    }
-
-    if (step === 'error' || status === 'failed') {
-      setPipelineError(message || 'Pipeline failed')
-    }
-  }
+    // Store ref for cleanup
+    simTimersRef.current = [{ close: () => ws.close() }]
+  }, [sceneData, jobId, selectedModel])
 
   /* ---- Auto-scroll console ---- */
   useEffect(() => {
@@ -258,12 +269,10 @@ export default function Landing() {
     }
   }, [consoleLog])
 
-  /* ---- Cleanup WebSocket on unmount ---- */
+  /* ---- Cleanup timers on unmount ---- */
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
+      simTimersRef.current.forEach(t => clearTimeout(t))
     }
   }, [])
 
@@ -271,12 +280,12 @@ export default function Landing() {
      UI ACTIONS
      ────────────────────────────────────────────────────── */
   const resetAll = () => {
-    if (wsRef.current) wsRef.current.close()
+    simTimersRef.current.forEach(t => clearTimeout(t))
     setPhase('idle')
     setTopic('')
+    setStoryTitle('')
     setDisplayScript('')
     setSceneData(null)
-    setJobId(null)
     setScriptError(null)
     setConsoleLog([])
     setSceneStatuses({})
@@ -288,13 +297,38 @@ export default function Landing() {
     setGenStep(0)
     setGenProgress(0)
     setIsEditing(false)
+    if (uploadedImage?.url) {
+      URL.revokeObjectURL(uploadedImage.url)
+    }
+    setUploadedImage(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setUploadedImage({ file, url, name: file.name })
+    }
+  }
+
+  const removeUploadedImage = () => {
+    if (uploadedImage?.url) {
+      URL.revokeObjectURL(uploadedImage.url)
+    }
+    setUploadedImage(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   const goBack = () => {
     if (phase === 'review-script') {
       setPhase('idle')
     } else if (phase === 'generating-video') {
-      if (wsRef.current) wsRef.current.close()
+      simTimersRef.current.forEach(t => clearTimeout(t))
       setPhase('review-script')
       setConsoleLog([])
       setSceneStatuses({})
@@ -389,7 +423,7 @@ export default function Landing() {
             </button>
             <div className="yai-review__badge">
               <Bot size={14} />
-              <span>Groq AI Script</span>
+              <span>Nexoryx AI Script</span>
             </div>
             <button className="yai-new-btn" onClick={resetAll}>
               <RotateCcw size={14} />
@@ -400,7 +434,7 @@ export default function Landing() {
           {/* Topic Display */}
           <div className="yai-review__topic">
             <Sparkles size={16} />
-            <h2>{topic}</h2>
+            <h2>{storyTitle}</h2>
           </div>
 
           {/* Script Content — shows real Groq output */}
@@ -416,7 +450,7 @@ export default function Landing() {
             ) : (
               <div className="yai-review__script">
                 {/* Structured view of scene_data */}
-                <h2 className="yai-script-h1">{topic}</h2>
+                <h2 className="yai-script-h1">{storyTitle}</h2>
 
                 <div className="yai-script-section">
                   <h3 className="yai-script-h2">🎨 Origin Frame</h3>
@@ -482,6 +516,7 @@ export default function Landing() {
     const segments = sceneData?.segments || []
     const totalScenes = segments.length
     const completedScenes = Object.values(sceneStatuses).filter(s => s.status === 'done').length
+    const doneFrames = completedFrames
 
     return (
       <div className="yai-overlay">
@@ -529,7 +564,7 @@ export default function Landing() {
             <div className="yai-render__scenes">
               <div className="yai-render__scenes-header">
                 <Sparkles size={14} />
-                <span>{topic}</span>
+                <span>{storyTitle}</span>
               </div>
 
               {/* Origin Image Card */}
@@ -606,7 +641,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Right: Console Log */}
+            {/* Right: Console Log + Frame Gallery */}
             <div className="yai-render__console">
               <div className="yai-render__console-header">
                 <div className="yai-console-dots">
@@ -625,6 +660,16 @@ export default function Landing() {
                       transition={{ duration: 0.2 }}
                     >
                       <span className="yai-console-line__text">{msg.text}</span>
+                      {msg.frameUrl && (
+                        <motion.img
+                          src={msg.frameUrl}
+                          alt="Generated frame"
+                          className="yai-console-frame"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 80 }}
+                          transition={{ duration: 0.5, delay: 0.2 }}
+                        />
+                      )}
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -665,15 +710,14 @@ export default function Landing() {
             </button>
           </div>
 
-          {/* Video Player */}
+          {/* Video Player — full controls like History page */}
           <div className="yai-video-ready__player-wrap">
-            <div className="yai-video-ready__player">
+            <div className="yai-video-ready__player" style={{ position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto', aspectRatio: '16/9', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
               <video
                 src={finalVideoUrl}
                 controls
                 autoPlay
-                muted
-                className="yai-video-player"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 id="yai-final-video"
               />
               <div className="yai-video-ready__overlay-badge">
@@ -684,26 +728,11 @@ export default function Landing() {
 
             <div className="yai-video-ready__info">
               <h3 className="yai-video-ready__topic-name">
-                <Sparkles size={16} /> {topic}
+                <Sparkles size={16} /> {storyTitle}
               </h3>
               <p className="yai-video-ready__stats">
                 {segments.length} scenes • Generated by Nexoryx Pipeline
               </p>
-            </div>
-          </div>
-
-          {/* Generation Log Preview */}
-          <div className="yai-video-ready__chat-preview">
-            <div className="yai-chat-preview__header">
-              <MessageSquare size={14} />
-              <span>Generation Log</span>
-            </div>
-            <div className="yai-chat-preview__messages">
-              {consoleLog.slice(-6).map((msg, i) => (
-                <div key={i} className="yai-chat-preview__msg">
-                  <p>{msg.text}</p>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -753,9 +782,42 @@ export default function Landing() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
-          <div className="hero__badge">
-            <span className="hero__badge-dot" />
-            Now in Public Beta
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div className="hero__badge" style={{ margin: 0 }}>
+              <span className="hero__badge-dot" />
+              Now in Public Beta
+            </div>
+            <button 
+              onClick={() => navigate('/history')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '6px 16px',
+                borderRadius: '100px',
+                fontSize: '0.85rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
+                e.currentTarget.style.color = '#fff'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'
+                e.currentTarget.style.color = 'var(--text-secondary)'
+              }}
+            >
+              <Film size={14} style={{ color: 'var(--accent-violet)' }} />
+              <span>Public beta is down temporarily — visit History to see generated videos</span>
+              <ArrowRight size={14} />
+            </button>
           </div>
           <h1 className="hero__title">
             Cinematic Vision.{' '}
@@ -769,7 +831,29 @@ export default function Landing() {
         </motion.div>
 
         <motion.div className="prompt-bar" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
+
+          {uploadedImage && (
+            <div className="prompt-bar__image-preview">
+              <div className="prompt-bar__image-preview-inner">
+                <img src={uploadedImage.url} alt="Uploaded" className="prompt-bar__image-preview-img" />
+                <button className="prompt-bar__image-preview-remove" onClick={removeUploadedImage}>
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="prompt-bar__wrapper">
+            <button className="prompt-bar__upload-btn" onClick={() => fileInputRef.current?.click()} title="Upload Image">
+              <Plus size={20} />
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
             <input
               className="prompt-bar__input"
               type="text"
@@ -784,6 +868,11 @@ export default function Landing() {
               <Sparkles size={16} />
               <span>Generate</span>
             </button>
+          </div>
+
+          {/* Model selector below prompt */}
+          <div style={{ marginTop: '16px' }}>
+            <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="compact" />
           </div>
         </motion.div>
 
