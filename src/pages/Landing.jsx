@@ -830,50 +830,29 @@ export default function Landing() {
           </p>
         </motion.div>
 
-        <motion.div className="prompt-bar" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-
-          {uploadedImage && (
-            <div className="prompt-bar__image-preview">
-              <div className="prompt-bar__image-preview-inner">
-                <img src={uploadedImage.url} alt="Uploaded" className="prompt-bar__image-preview-img" />
-                <button className="prompt-bar__image-preview-remove" onClick={removeUploadedImage}>
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="prompt-bar__wrapper">
-            <button className="prompt-bar__upload-btn" onClick={() => fileInputRef.current?.click()} title="Upload Image">
-              <Plus size={20} />
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
-            <input
-              className="prompt-bar__input"
-              type="text"
-              placeholder="Enter your topic... e.g. 'Cyberpunk Heist' or 'Nike Ad'"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && startPipeline()}
-              autoComplete="off"
-              id="hero-prompt-input"
-            />
-            <button className="prompt-bar__btn" onClick={startPipeline} disabled={!topic.trim()} id="hero-generate-btn">
-              <Sparkles size={16} />
-              <span>Generate</span>
-            </button>
-          </div>
-
-          {/* Model selector below prompt */}
-          <div style={{ marginTop: '16px' }}>
-            <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="compact" />
-          </div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <motion.button
+            className="prompt-bar__btn"
+            onClick={() => navigate('/generate')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+            id="hero-start-generating-btn"
+            style={{
+              padding: '16px 48px',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              borderRadius: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+            }}
+          >
+            <Sparkles size={20} />
+            <span>Start Generating</span>
+            <ArrowRight size={18} />
+          </motion.button>
+          <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="compact" />
         </motion.div>
 
         {/* Error display */}
