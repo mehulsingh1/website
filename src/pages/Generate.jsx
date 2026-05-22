@@ -14,7 +14,7 @@ import { useHistory } from '../components/HistoryContext'
    NORMAL MODE CONSTANTS
    ──────────────────────────────────────────────────────── */
 const DURATIONS = [5, 10, 15, 30]
-const STYLES = ['Cinematic', 'Anime', 'Photorealistic', 'Abstract']
+const STYLES = ['Cinematic', 'Anime', 'Photorealistic']
 
 /* ────────────────────────────────────────────────────────
    STORY MODE CONSTANTS
@@ -343,7 +343,7 @@ export default function Generate() {
     setJobId(null)
     uploadedFiles.forEach(f => URL.revokeObjectURL(f.url))
     setUploadedFiles([])
-    
+
     // Story mode resets
     setStoryTitle('')
     setDisplayScript('')
@@ -662,21 +662,52 @@ export default function Generate() {
      RENDER: IDLE — Main Generation Form (Shared)
      ══════════════════════════════════════════════════════ */
   return (
-    <div className="qs-page">
-      <div className="qs-container">
+    <div className="qs-page" style={{ position: 'relative', overflow: 'hidden' }} data-mode={activeMode}>
+      {/* Resonating Background Video */}
+      <video
+        src="/generation.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          minWidth: '100vw',
+          minHeight: '100vh',
+          objectFit: 'cover',
+          opacity: 0.15,
+          filter: 'blur(60px) saturate(1.5)',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }}
+      />
+      
+      <div className="qs-container" style={{ position: 'relative', zIndex: 1 }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          
+
           {/* Header */}
           <div className="qs-header">
-            <div className="qs-header__badge">
+            <div 
+              className="qs-header__badge"
+              style={activeMode === 'story' ? { color: '#fcd34d', borderColor: 'rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.15)', boxShadow: '0 0 15px rgba(245, 158, 11, 0.2)' } : {}}
+            >
               {activeMode === 'story' ? <BookOpen size={14} /> : <Sparkles size={14} />}
-              {activeMode === 'story' ? 'STORY MODE (PRO)' : 'QUICK GENERATE'}
+              {activeMode === 'story' ? 'STORY BOARD (PRO)' : 'QUICK GENERATE'}
             </div>
             <h1 className="qs-header__title">
-              {activeMode === 'story' ? 'Epic Story.' : 'One Prompt.'} <span className="qs-header__accent">{activeMode === 'story' ? 'Watch it Unfold.' : 'One Video.'}</span>
+              {activeMode === 'story' ? (
+                <span style={{ background: 'linear-gradient(135deg, #fef08a, #f59e0b, #d97706)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}>
+                  Epic Story. Watch it Unfold.
+                </span>
+              ) : (
+                <>One Prompt. <span className="qs-header__accent">One Video.</span></>
+              )}
             </h1>
             <p className="qs-header__sub">
-              {activeMode === 'story' 
+              {activeMode === 'story'
                 ? 'Enter a topic and our AI will write a cinematic story, then generate a full video scene-by-scene — all automatically.'
                 : 'Skip the storyboard — go straight from text to a stunning AI-generated video.'}
             </p>
@@ -735,7 +766,7 @@ export default function Generate() {
               </div>
               <textarea
                 className="qs-prompt__input"
-                placeholder={activeMode === 'story' 
+                placeholder={activeMode === 'story'
                   ? "Enter your story topic... e.g. 'A heist in neon Tokyo' or 'Time traveler's last day'"
                   : "Describe your video... e.g. 'A golden retriever running through a field of sunflowers at sunset'"}
                 value={prompt}
@@ -749,7 +780,7 @@ export default function Generate() {
                   onClick={() => setModeDropdownOpen(!modeDropdownOpen)}
                   title="Switch mode"
                   id="qs-mode-toggle-btn"
-                  style={{ 
+                  style={{
                     background: activeMode === 'story' ? 'rgba(245, 158, 11, 0.1)' : undefined,
                     color: activeMode === 'story' ? '#f59e0b' : undefined,
                     borderColor: activeMode === 'story' ? 'rgba(245, 158, 11, 0.3)' : undefined
@@ -811,7 +842,7 @@ export default function Generate() {
           </div>
 
           {/* Controls Row */}
-          <div className="qs-controls" style={{ opacity: activeMode === 'story' ? 0.5 : 1, pointerEvents: activeMode === 'story' ? 'none' : 'auto' }}>
+          <div className="qs-controls">
             <div className="qs-control-group">
               <label className="qs-control-label"><Clock size={12} /> Duration</label>
               <div className="qs-pills">
@@ -841,10 +872,6 @@ export default function Generate() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             id="qs-generate-btn"
-            style={{ 
-              background: activeMode === 'story' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : undefined,
-              boxShadow: activeMode === 'story' ? '0 10px 30px rgba(245, 158, 11, 0.3)' : undefined
-            }}
           >
             {activeMode === 'story' ? <BookOpen size={18} /> : <Sparkles size={18} />}
             <span>{activeMode === 'story' ? 'Start Story Pipeline' : 'Generate Video'}</span>

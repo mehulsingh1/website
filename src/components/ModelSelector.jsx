@@ -35,7 +35,7 @@ export default function ModelSelector({ selectedModel, onSelect, mode = 'full' }
     fetch('/api/models')
       .then(r => r.json())
       .then(data => { if (data.models) setModels(data.models) })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [])
 

@@ -123,9 +123,9 @@ export default function Landing() {
   const simTimersRef = useRef([])
   const chatContainerRef = useRef(null)
 
-   /* ──────────────────────────────────────────────────────
-     PHASE 1: Generate Script (REAL API)
-     ────────────────────────────────────────────────────── */
+  /* ──────────────────────────────────────────────────────
+    PHASE 1: Generate Script (REAL API)
+    ────────────────────────────────────────────────────── */
   const startPipeline = async () => {
     if (!topic.trim() || phase !== 'idle') return
     setPhase('generating-script')
@@ -787,7 +787,7 @@ export default function Landing() {
               <span className="hero__badge-dot" />
               Now in Public Beta
             </div>
-            <button 
+            <button
               onClick={() => navigate('/history')}
               style={{
                 background: 'rgba(255, 255, 255, 0.03)',
