@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -7,13 +7,13 @@ import {
   AlertTriangle, ArrowRight, Zap, ChevronDown, BookOpen, Crown,
   Plus, X, Image, Video, ArrowLeft, Cpu, Bot, Pencil
 } from 'lucide-react'
-import ModelSelector from '../components/ModelSelector'
+import ModelSelector, { FALLBACK_MODELS } from '../components/ModelSelector'
 import { useHistory } from '../components/HistoryContext'
 
 /* ────────────────────────────────────────────────────────
    NORMAL MODE CONSTANTS
    ──────────────────────────────────────────────────────── */
-const DURATIONS = [5, 10, 15, 30]
+const ALL_DURATIONS = [5, 10, 15, 20, 25, 30]
 const STYLES = ['Cinematic', 'Anime', 'Photorealistic']
 
 /* ────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ export default function Generate() {
   // Common UI State
   const [activeMode, setActiveMode] = useState('normal') // 'normal' | 'story'
   const [prompt, setPrompt] = useState('')
-  const [selectedModel, setSelectedModel] = useState('wan-2.1')
+  const [selectedModel, setSelectedModel] = useState(null)
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState([])
   const modeDropdownRef = useRef(null)
@@ -86,6 +86,21 @@ export default function Generate() {
   // Normal Mode State
   const [duration, setDuration] = useState(5)
   const [style, setStyle] = useState('Cinematic')
+
+  // Compute allowed durations based on selected model's max_duration
+  const allowedDurations = useMemo(() => {
+    if (!selectedModel) return ALL_DURATIONS
+    const model = FALLBACK_MODELS.find(m => m.id === selectedModel)
+    const maxDur = model?.max_duration || 30
+    return ALL_DURATIONS.filter(d => d <= maxDur)
+  }, [selectedModel])
+
+  // Auto-adjust duration when switching to a model that doesn't support it
+  useEffect(() => {
+    if (!allowedDurations.includes(duration)) {
+      setDuration(allowedDurations[allowedDurations.length - 1])
+    }
+  }, [allowedDurations, duration])
 
   // Phase State (Common for routing renders)
   // idle | generating | done | error | generating-script | review-script | generating-video | video-ready
@@ -846,7 +861,7 @@ export default function Generate() {
             <div className="qs-control-group">
               <label className="qs-control-label"><Clock size={12} /> Duration</label>
               <div className="qs-pills">
-                {DURATIONS.map(d => (
+                {allowedDurations.map(d => (
                   <button key={d} className={`qs-pill ${duration === d ? 'qs-pill--active' : ''}`} onClick={() => setDuration(d)}>{d}s</button>
                 ))}
               </div>

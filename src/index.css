@@ -114,6 +114,7 @@ body,
   cursor: pointer;
   transition: all 0.3s ease;
   margin-right: 4px;
+  margin-left: 20px;
 }
 
 .theme-toggle:hover {
@@ -1049,7 +1050,7 @@ h6 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
+  padding: 0 20px 0 40px; /* Reduced right padding to allow icons to shift right */
   z-index: 100;
   background: rgba(1, 1, 3, 0.75);
   backdrop-filter: blur(30px) saturate(1.4);
@@ -1093,6 +1094,53 @@ h6 {
 .navbar__link:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.navbar__dropdown {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.navbar__dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(12, 12, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.navbar__dropdown:hover .navbar__dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.navbar__dropdown-item {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.navbar__dropdown-item:hover {
+  color: var(--accent-violet);
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .navbar__cta {
@@ -10706,6 +10754,20 @@ yai-scene-card__meta {
 .yai-video-ready__stats {
   color: var(--text-muted);
   margin-top: 8px;
+}
+
+.yai-video-ready__overlay-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  z-index: 10;
 }
 
 .yai-video-ready__overlay-badge {

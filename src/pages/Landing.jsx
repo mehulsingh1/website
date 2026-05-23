@@ -852,7 +852,6 @@ export default function Landing() {
             <span>Start Generating</span>
             <ArrowRight size={18} />
           </motion.button>
-          <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="compact" />
         </motion.div>
 
         {/* Error display */}

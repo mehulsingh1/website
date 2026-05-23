@@ -5,17 +5,17 @@ import { Cpu, Zap, Eye, Clock, Check, Sparkles, Loader2 } from 'lucide-react'
 /* ────────────────────────────────────────────────────────
    Hardcoded fallback models (used if backend unreachable)
    ──────────────────────────────────────────────────────── */
-const FALLBACK_MODELS = [
-  { id: 'grok-imagine-video', name: 'Grok Imagine Video', provider: 'xAI', provider_logo: 'xai', quality: '4K', speed: 'Balanced', cost_per_sec: 0.25, supports_image: true, supports_text: true },
-  { id: 'wan-2.1', name: 'Wan 2.1', provider: 'WaveSpeed AI', provider_logo: 'wavespeed', quality: 'HD', speed: 'Fast', cost_per_sec: 0.10, supports_image: false, supports_text: true },
-  { id: 'hunyuan-video', name: 'Hunyuan Video', provider: 'Tencent', provider_logo: 'tencent', quality: 'HD', speed: 'Quality', cost_per_sec: 0.18, supports_image: false, supports_text: true },
-  { id: 'minimax-video-01', name: 'Minimax Video-01', provider: 'Minimax', provider_logo: 'minimax', quality: 'HD', speed: 'Balanced', cost_per_sec: 0.15, supports_image: true, supports_text: true },
-  { id: 'kling-1.6-pro', name: 'Kling 1.6 Pro', provider: 'Kuaishou', provider_logo: 'kling', quality: '4K', speed: 'Quality', cost_per_sec: 0.30, supports_image: true, supports_text: true },
-  { id: 'ltx-video', name: 'LTX Video', provider: 'Lightricks', provider_logo: 'lightricks', quality: 'HD', speed: 'Fast', cost_per_sec: 0.08, supports_image: false, supports_text: true },
-  { id: 'veo-3', name: 'Veo 3', provider: 'Google DeepMind', provider_logo: 'google', quality: '4K', speed: 'Quality', cost_per_sec: 0.35, supports_image: true, supports_text: true },
-  { id: 'cogvideox-5b', name: 'CogVideoX-5B', provider: 'THUDM', provider_logo: 'thudm', quality: 'HD', speed: 'Balanced', cost_per_sec: 0.12, supports_image: true, supports_text: true },
-  { id: 'pika-2.2', name: 'Pika 2.2', provider: 'Pika Labs', provider_logo: 'pika', quality: 'HD', speed: 'Fast', cost_per_sec: 0.14, supports_image: true, supports_text: true },
-  { id: 'gen4-turbo', name: 'Gen-4 Turbo', provider: 'Runway ML', provider_logo: 'runway', quality: '4K', speed: 'Fast', cost_per_sec: 0.20, supports_image: true, supports_text: true },
+export const FALLBACK_MODELS = [
+  { id: 'grok-imagine-video', name: 'Grok Imagine Video', provider: 'xAI', provider_logo: 'xai', quality: '4K', speed: 'Balanced', cost_per_sec: 0.25, max_duration: 15, supports_image: true, supports_text: true },
+  { id: 'wan-2.1', name: 'Wan 2.1', provider: 'WaveSpeed AI', provider_logo: 'wavespeed', quality: 'HD', speed: 'Fast', cost_per_sec: 0.10, max_duration: 10, supports_image: false, supports_text: true },
+  { id: 'hunyuan-video', name: 'Hunyuan Video', provider: 'Tencent', provider_logo: 'tencent', quality: 'HD', speed: 'Quality', cost_per_sec: 0.18, max_duration: 15, supports_image: false, supports_text: true },
+  { id: 'minimax-video-01', name: 'Minimax Video-01', provider: 'Minimax', provider_logo: 'minimax', quality: 'HD', speed: 'Balanced', cost_per_sec: 0.15, max_duration: 15, supports_image: true, supports_text: true },
+  { id: 'kling-1.6-pro', name: 'Kling 1.6 Pro', provider: 'Kuaishou', provider_logo: 'kling', quality: '4K', speed: 'Quality', cost_per_sec: 0.30, max_duration: 30, supports_image: true, supports_text: true },
+  { id: 'ltx-video', name: 'LTX Video', provider: 'Lightricks', provider_logo: 'lightricks', quality: 'HD', speed: 'Fast', cost_per_sec: 0.08, max_duration: 10, supports_image: false, supports_text: true },
+  { id: 'veo-3', name: 'Veo 3', provider: 'Google DeepMind', provider_logo: 'google', quality: '4K', speed: 'Quality', cost_per_sec: 0.35, max_duration: 30, supports_image: true, supports_text: true },
+  { id: 'cogvideox-5b', name: 'CogVideoX-5B', provider: 'THUDM', provider_logo: 'thudm', quality: 'HD', speed: 'Balanced', cost_per_sec: 0.12, max_duration: 10, supports_image: true, supports_text: true },
+  { id: 'pika-2.2', name: 'Pika 2.2', provider: 'Pika Labs', provider_logo: 'pika', quality: 'HD', speed: 'Fast', cost_per_sec: 0.14, max_duration: 10, supports_image: true, supports_text: true },
+  { id: 'gen4-turbo', name: 'Gen-4 Turbo', provider: 'Runway ML', provider_logo: 'runway', quality: '4K', speed: 'Fast', cost_per_sec: 0.20, max_duration: 15, supports_image: true, supports_text: true },
 ]
 
 const SPEED_COLORS = { Fast: '#22c55e', Balanced: '#f59e0b', Quality: '#8b5cf6' }
