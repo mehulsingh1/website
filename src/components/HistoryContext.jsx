@@ -4,10 +4,10 @@ const HistoryContext = createContext()
 
 export function HistoryProvider({ children }) {
   const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem('nexoryx_history_v2')
+    const saved = localStorage.getItem('nexoryx_history_v3')
     if (saved) {
       const parsed = JSON.parse(saved)
-      return parsed.map(item => item.videoUrl === '/Seedance.mp4' ? { ...item, videoUrl: '/Seedance.mp4' } : item)
+      return parsed.map(item => (item.videoUrl === '/final.mp4' || item.videoUrl === '/seedance video.mp4' || item.videoUrl === '/seedance.mp4') ? { ...item, videoUrl: '/Seedance.mp4' } : item)
     }
     return [
       { id: 1, title: 'Dark Romance Mafia', date: new Date(Date.now() - 7200000).toISOString(), duration: 45, quality: '4K', videoUrl: '/generation.mp4' },
@@ -17,7 +17,7 @@ export function HistoryProvider({ children }) {
   })
 
   useEffect(() => {
-    localStorage.setItem('nexoryx_history_v2', JSON.stringify(history))
+    localStorage.setItem('nexoryx_history_v3', JSON.stringify(history))
   }, [history])
 
   const addVideo = (video) => {
