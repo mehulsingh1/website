@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+﻿import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -9,11 +9,10 @@ import {
   MessageSquare, Video, Wand2, AlertTriangle,
   Plus, X
 } from 'lucide-react'
-import ModelSelector from '../components/ModelSelector'
 
-/* ────────────────────────────────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    STATUS MESSAGES SHOWN WHILE NEXORYX IS WORKING
-   ──────────────────────────────────────────────────────── */
+   ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 const SCRIPT_GEN_STEPS = [
   'Initializing Nexoryx Engine...',
   'Analyzing your creative vision...',
@@ -30,18 +29,18 @@ const SCENE_FRAMES = [
 const SIMULATED_SCRIPT = {
   origin_image_prompt: 'A young man in a plaid flannel shirt sits on weathered rocks at the edge of a dark river gorge, overhead drone shot, golden hour side-lighting, moody cinematic color grade.',
   segments: [
-    { video_prompt: 'Slow overhead drone descent — the young man sits on the cliff edge, staring into the dark water below. Sunlight sparkles on the rippling surface. The camera pushes in slowly, building tension. Atmospheric ambient score.' },
-    { video_prompt: 'Wide angle from below — the man leaps off the rocky cliff, arms outstretched, plaid shirt billowing. Camera tracks his fall in slow motion against the towering rock face. Water rushes up to meet him. Impact score builds.' },
-    { video_prompt: 'Underwater POV — murky green depths. The man turns to find a massive great white shark looming directly behind him, jaws slightly parted. Volumetric light rays pierce from above. Tension reaches peak. Deep bass rumble.' },
-    { video_prompt: 'Dynamic underwater tracking — the man grapples with the shark in a cloud of bubbles. His hands push against the creature as it thrashes. Adrenaline-fueled handheld camera movement. Heart-pounding percussion.' },
-    { video_prompt: 'Surface-level tracking shot — the shark lunges from the churning water, mouth wide open, as the man desperately claws his way onto the muddy riverbank. Water explodes around them. Frantic string crescendo.' },
-    { video_prompt: 'Close-up portrait — the man lies on the dried riverbank, soaked and covered in mud, catching his breath. He looks back at the water where the shark\'s shadow fades. Golden hour backlight. Score resolves to quiet piano.' },
+    { video_prompt: 'Slow overhead drone descent ΓÇö the young man sits on the cliff edge, staring into the dark water below. Sunlight sparkles on the rippling surface. The camera pushes in slowly, building tension. Atmospheric ambient score.' },
+    { video_prompt: 'Wide angle from below ΓÇö the man leaps off the rocky cliff, arms outstretched, plaid shirt billowing. Camera tracks his fall in slow motion against the towering rock face. Water rushes up to meet him. Impact score builds.' },
+    { video_prompt: 'Underwater POV ΓÇö murky green depths. The man turns to find a massive great white shark looming directly behind him, jaws slightly parted. Volumetric light rays pierce from above. Tension reaches peak. Deep bass rumble.' },
+    { video_prompt: 'Dynamic underwater tracking ΓÇö the man grapples with the shark in a cloud of bubbles. His hands push against the creature as it thrashes. Adrenaline-fueled handheld camera movement. Heart-pounding percussion.' },
+    { video_prompt: 'Surface-level tracking shot ΓÇö the shark lunges from the churning water, mouth wide open, as the man desperately claws his way onto the muddy riverbank. Water explodes around them. Frantic string crescendo.' },
+    { video_prompt: 'Close-up portrait ΓÇö the man lies on the dried riverbank, soaked and covered in mud, catching his breath. He looks back at the water where the shark\'s shadow fades. Golden hour backlight. Score resolves to quiet piano.' },
   ],
 }
 
-/* ────────────────────────────────────────────────────────
-   SHOWCASE & FEATURES (static landing content – unchanged)
-   ──────────────────────────────────────────────────────── */
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+   SHOWCASE & FEATURES (static landing content ΓÇô unchanged)
+   ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 const SHOWCASE_ITEMS = [
   {
     id: 1,
@@ -62,7 +61,7 @@ const SHOWCASE_ITEMS = [
     prompt: 'Eating maggi fall into river,fighnting an shark,running away from it to the cliff',
     duration: '45s',
     model: 'Nexoryx Pro',
-    video: '/final.mp4',
+    video: '/new_generation.mp4',
   },
 ]
 
@@ -75,7 +74,7 @@ const FEATURES = [
   {
     icon: <Bot size={22} />,
     title: 'AI Agent Director',
-    desc: 'Our AI agent understands cinematic language. Describe your intent naturally — it handles composition, pacing, and visual storytelling.',
+    desc: 'Our AI agent understands cinematic language. Describe your intent naturally ΓÇö it handles composition, pacing, and visual storytelling.',
   },
   {
     icon: <Clapperboard size={22} />,
@@ -97,8 +96,6 @@ export default function Landing() {
   // Phases: idle | generating-script | review-script | generating-video | video-ready
   const [phase, setPhase] = useState('idle')
   const [storyTitle, setStoryTitle] = useState('')
-  const [selectedModel, setSelectedModel] = useState('grok-imagine-video')
-  const [jobId, setJobId] = useState(null)
 
   /* ---- Script data ---- */
   const [sceneData, setSceneData] = useState(null)
@@ -123,10 +120,10 @@ export default function Landing() {
   const simTimersRef = useRef([])
   const chatContainerRef = useRef(null)
 
-  /* ──────────────────────────────────────────────────────
-    PHASE 1: Generate Script (REAL API)
-    ────────────────────────────────────────────────────── */
-  const startPipeline = async () => {
+  /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+     PHASE 1: Generate Script (SIMULATED)
+     ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+  const startPipeline = () => {
     if (!topic.trim() || phase !== 'idle') return
     setPhase('generating-script')
     setGenStep(0)
@@ -136,7 +133,6 @@ export default function Landing() {
     setSceneData(null)
     setIsEditing(false)
 
-    // Animate progress steps while API call is in flight
     let stepIdx = 0
     const stepTimer = setInterval(() => {
       stepIdx = Math.min(stepIdx + 1, SCRIPT_GEN_STEPS.length - 1)
@@ -145,48 +141,31 @@ export default function Landing() {
 
     let prog = 0
     const progTimer = setInterval(() => {
-      prog = Math.min(prog + 1, 90)
+      prog = Math.min(prog + 2, 100)
       setGenProgress(prog)
-    }, 100)
+    }, 60)
 
-    try {
-      const res = await fetch('/api/draft-script', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic }),
-      })
-      const data = await res.json()
-
+    setTimeout(() => {
       clearInterval(stepTimer)
       clearInterval(progTimer)
-
-      if (data.error) {
-        setScriptError(data.error)
-        setPhase('idle')
-        return
-      }
-
       setGenProgress(100)
-      setJobId(data.job_id)
-      setStoryTitle(topic)
-      setSceneData(data.scene_data)
-      setDisplayScript(data.display_script || '')
+      setStoryTitle('Shark River Survival')
+      const script = SIMULATED_SCRIPT
+      setSceneData(script)
+      const lines = [`≡ƒÄ¿ Origin Frame\n${script.origin_image_prompt}\n`]
+      script.segments.forEach((s, i) => lines.push(`≡ƒÄ¼ Scene ${i + 1}\n${s.video_prompt}\n`))
+      setDisplayScript(lines.join('\n---\n'))
       setTimeout(() => setPhase('review-script'), 400)
-    } catch (err) {
-      clearInterval(stepTimer)
-      clearInterval(progTimer)
-      setScriptError(err.message || 'Failed to connect to Nexoryx API')
-      setPhase('idle')
-    }
+    }, 4000)
   }
 
   const addConsoleMsg = (text, type = 'system', frameUrl = null) => {
     setConsoleLog(prev => [...prev, { text, type, frameUrl, id: Date.now() + Math.random() }])
   }
 
-  /* ──────────────────────────────────────────────────────
-     PHASE 3: Production Pipeline (REAL WebSocket)
-     ────────────────────────────────────────────────────── */
+  /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+     PHASE 3: Production Pipeline (SIMULATED)
+     ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
   const startVideoGeneration = useCallback(() => {
     if (!sceneData) return
     setPhase('generating-video')
@@ -199,68 +178,68 @@ export default function Landing() {
     setPipelineError(null)
     setCompletedFrames([])
 
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${wsProtocol}//${window.location.host}/api/ws/produce`
-    const ws = new WebSocket(wsUrl)
+    const timers = []
+    const totalSegments = sceneData.segments.length
+    let delay = 0
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({
-        job_id: jobId || 'live-' + Date.now(),
-        scene_data: sceneData,
-        model_id: selectedModel,
-      }))
-      addConsoleMsg('→ Connected to Nexoryx Pipeline Engine...', 'system')
-    }
+    // Initial messages
+    delay += 800
+    timers.push(setTimeout(() => addConsoleMsg('ΓåÆ Connected to Nexoryx Pipeline Engine...', 'system'), delay))
+    delay += 1200
+    timers.push(setTimeout(() => addConsoleMsg('ΓåÆ Script approved ΓÇö sending to production...', 'system'), delay))
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
-      const progress = msg.progress || 0
-      setVideoProgress(progress)
+    // Origin image
+    delay += 1500
+    timers.push(setTimeout(() => {
+      setActiveStep('origin_image')
+      addConsoleMsg('Γû╕ Generating origin anchor frame via Flux-Dev...', 'render')
+    }, delay))
+    delay += 4000
+    timers.push(setTimeout(() => {
+      setOriginImageUrl('/frame1.png')
+      setVideoProgress(10)
+      addConsoleMsg('  Γ£ô Origin frame generated', 'done', '/frame1.png')
+      setCompletedFrames(prev => [...prev, '/frame1.png'])
+    }, delay))
 
-      if (msg.step === 'origin_image') {
-        setActiveStep('origin_image')
-        if (msg.status === 'done') {
-          setOriginImageUrl(msg.image_url)
-          addConsoleMsg('  ✓ Origin frame generated', 'done', msg.image_url)
-          setCompletedFrames(prev => [...prev, msg.image_url])
-        } else {
-          addConsoleMsg('▸ Generating origin anchor frame...', 'render')
-        }
-      } else if (msg.step?.startsWith('scene_')) {
-        setActiveStep(msg.step)
-        if (msg.status === 'done') {
-          setSceneStatuses(prev => ({ ...prev, [msg.step]: { status: 'done', videoUrl: msg.video_url } }))
-          addConsoleMsg(`  ✓ ${msg.step.replace('_', ' ')} complete`, 'done')
-        } else if (msg.status === 'rendering') {
-          setSceneStatuses(prev => ({ ...prev, [msg.step]: { status: 'rendering' } }))
-          addConsoleMsg(`▸ ${msg.message}`, 'render')
-        }
-      } else if (msg.step === 'stitching') {
-        setActiveStep('stitching')
-        addConsoleMsg('▸ Stitching all scenes via ffmpeg...', 'render')
-      } else if (msg.step === 'final' && msg.status === 'done') {
-        setFinalVideoUrl(msg.video_url || msg.download_url)
-        addConsoleMsg('✦ Video ready — One-Take Complete!', 'final')
-        setTimeout(() => setPhase('video-ready'), 1500)
-      } else if (msg.step === 'error') {
-        setPipelineError(msg.message)
-        addConsoleMsg(`✗ ${msg.message}`, 'error')
-      } else if (msg.step === 'cooldown') {
-        addConsoleMsg(`⏳ ${msg.message}`, 'system')
-      }
-    }
+    // Scene segments
+    sceneData.segments.forEach((seg, i) => {
+      const sceneKey = `scene_${i + 1}`
+      const frameUrl = SCENE_FRAMES[i] || SCENE_FRAMES[0]
 
-    ws.onerror = () => {
-      setPipelineError('WebSocket connection failed. Is the backend running?')
-    }
+      delay += 2500
+      timers.push(setTimeout(() => {
+        setActiveStep(sceneKey)
+        setSceneStatuses(prev => ({ ...prev, [sceneKey]: { status: 'rendering' } }))
+        addConsoleMsg(`Γû╕ Rendering Scene ${i + 1} ΓÇö ${seg.video_prompt.substring(0, 50)}...`, 'render')
+      }, delay))
 
-    ws.onclose = () => {
-      // Normal close after pipeline completes
-    }
+      delay += 5000
+      timers.push(setTimeout(() => {
+        const pct = Math.round(10 + ((i + 1) / totalSegments) * 80)
+        setVideoProgress(pct)
+        setSceneStatuses(prev => ({ ...prev, [sceneKey]: { status: 'done', videoUrl: frameUrl } }))
+        addConsoleMsg(`  Γ£ô Scene ${i + 1} complete`, 'done', frameUrl)
+        setCompletedFrames(prev => [...prev, frameUrl])
+      }, delay))
+    })
 
-    // Store ref for cleanup
-    simTimersRef.current = [{ close: () => ws.close() }]
-  }, [sceneData, jobId, selectedModel])
+    // Final stitching
+    delay += 3000
+    timers.push(setTimeout(() => {
+      addConsoleMsg('Γû╕ Stitching all scenes via ffmpeg...', 'render')
+      setActiveStep('stitching')
+    }, delay))
+    delay += 4000
+    timers.push(setTimeout(() => {
+      setVideoProgress(100)
+      setFinalVideoUrl('/new_generation.mp4')
+      addConsoleMsg('Γ£ª Video ready ΓÇö One-Take Complete!', 'final')
+      setTimeout(() => setPhase('video-ready'), 1500)
+    }, delay))
+
+    simTimersRef.current = timers
+  }, [sceneData])
 
   /* ---- Auto-scroll console ---- */
   useEffect(() => {
@@ -276,9 +255,9 @@ export default function Landing() {
     }
   }, [])
 
-  /* ──────────────────────────────────────────────────────
+  /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
      UI ACTIONS
-     ────────────────────────────────────────────────────── */
+     ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
   const resetAll = () => {
     simTimersRef.current.forEach(t => clearTimeout(t))
     setPhase('idle')
@@ -437,7 +416,7 @@ export default function Landing() {
             <h2>{storyTitle}</h2>
           </div>
 
-          {/* Script Content — shows real Groq output */}
+          {/* Script Content ΓÇö shows real Groq output */}
           <div className="yai-review__content">
             {isEditing ? (
               <textarea
@@ -453,7 +432,7 @@ export default function Landing() {
                 <h2 className="yai-script-h1">{storyTitle}</h2>
 
                 <div className="yai-script-section">
-                  <h3 className="yai-script-h2">🎨 Origin Frame</h3>
+                  <h3 className="yai-script-h2">≡ƒÄ¿ Origin Frame</h3>
                   <p className="yai-script-line">{sceneData?.origin_image_prompt}</p>
                 </div>
 
@@ -461,7 +440,7 @@ export default function Landing() {
 
                 {sceneData?.segments?.map((seg, i) => (
                   <div key={i}>
-                    <h3 className="yai-script-h2">🎬 Scene {i + 1} — Motion & Audio</h3>
+                    <h3 className="yai-script-h2">≡ƒÄ¼ Scene {i + 1} ΓÇö Motion & Audio</h3>
                     <p className="yai-script-line">{seg.video_prompt}</p>
                     {i < sceneData.segments.length - 1 && <hr className="yai-script-divider" />}
                   </div>
@@ -469,12 +448,12 @@ export default function Landing() {
 
                 <hr className="yai-script-divider" />
                 <p className="yai-script-meta">Total Segments: {sceneData?.segments?.length}</p>
-                <p className="yai-script-meta">Pipeline: Flux-Dev → Grok Imagine Video → ffmpeg stitch</p>
+                <p className="yai-script-meta">Pipeline: Flux-Dev ΓåÆ Grok Imagine Video ΓåÆ ffmpeg stitch</p>
               </div>
             )}
           </div>
 
-          {/* Action Buttons — same as before but calls real API */}
+          {/* Action Buttons ΓÇö same as before but calls real API */}
           <div className="yai-review__actions">
             <button
               className={`yai-action-btn yai-action-btn--edit ${isEditing ? 'yai-action-btn--active' : ''}`}
@@ -529,7 +508,7 @@ export default function Landing() {
             </button>
             <div className="yai-render__title-group">
               <Film size={16} />
-              <h3>Nexoryx — Live Production Pipeline</h3>
+              <h3>Nexoryx ΓÇö Live Production Pipeline</h3>
             </div>
             <div className="yai-render__stats">
               <span className="yai-render__scene-count">{completedScenes}/{totalScenes} scenes</span>
@@ -675,7 +654,7 @@ export default function Landing() {
                 </AnimatePresence>
                 {videoProgress < 100 && (
                   <div className="yai-console-cursor">
-                    <span className="yai-console-cursor__blink">▋</span>
+                    <span className="yai-console-cursor__blink">Γûï</span>
                   </div>
                 )}
               </div>
@@ -710,7 +689,7 @@ export default function Landing() {
             </button>
           </div>
 
-          {/* Video Player — full controls like History page */}
+          {/* Video Player ΓÇö full controls like History page */}
           <div className="yai-video-ready__player-wrap">
             <div className="yai-video-ready__player" style={{ position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto', aspectRatio: '16/9', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
               <video
@@ -722,7 +701,7 @@ export default function Landing() {
               />
               <div className="yai-video-ready__overlay-badge">
                 <Film size={12} />
-                <span>AI Generated • One-Take</span>
+                <span>AI Generated ΓÇó One-Take</span>
               </div>
             </div>
 
@@ -731,7 +710,7 @@ export default function Landing() {
                 <Sparkles size={16} /> {storyTitle}
               </h3>
               <p className="yai-video-ready__stats">
-                {segments.length} scenes • Generated by Nexoryx Pipeline
+                {segments.length} scenes ΓÇó Generated by Nexoryx Pipeline
               </p>
             </div>
           </div>
@@ -787,7 +766,7 @@ export default function Landing() {
               <span className="hero__badge-dot" />
               Now in Public Beta
             </div>
-            <button
+            <button 
               onClick={() => navigate('/history')}
               style={{
                 background: 'rgba(255, 255, 255, 0.03)',
@@ -815,7 +794,7 @@ export default function Landing() {
               }}
             >
               <Film size={14} style={{ color: 'var(--accent-violet)' }} />
-              <span>Public beta is down temporarily — visit History to see generated videos</span>
+              <span>Public beta is down temporarily ΓÇö visit History to see generated videos</span>
               <ArrowRight size={14} />
             </button>
           </div>
@@ -826,32 +805,49 @@ export default function Landing() {
           </h1>
           <p className="hero__subtitle">
             Nexoryx is the AI-powered cinematic engine that transforms your text into
-            stunning scene-by-scene videos — built for creators who refuse to compromise.
+            stunning scene-by-scene videos ΓÇö built for creators who refuse to compromise.
           </p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <motion.button
-            className="prompt-bar__btn"
-            onClick={() => navigate('/generate')}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            id="hero-start-generating-btn"
-            style={{
-              padding: '16px 48px',
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              borderRadius: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              cursor: 'pointer',
-            }}
-          >
-            <Sparkles size={20} />
-            <span>Start Generating</span>
-            <ArrowRight size={18} />
-          </motion.button>
+        <motion.div className="prompt-bar" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
+
+          {uploadedImage && (
+            <div className="prompt-bar__image-preview">
+              <div className="prompt-bar__image-preview-inner">
+                <img src={uploadedImage.url} alt="Uploaded" className="prompt-bar__image-preview-img" />
+                <button className="prompt-bar__image-preview-remove" onClick={removeUploadedImage}>
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="prompt-bar__wrapper">
+            <button className="prompt-bar__upload-btn" onClick={() => fileInputRef.current?.click()} title="Upload Image">
+              <Plus size={20} />
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
+            <input
+              className="prompt-bar__input"
+              type="text"
+              placeholder="Enter your topic... e.g. 'Cyberpunk Heist' or 'Nike Ad'"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && startPipeline()}
+              autoComplete="off"
+              id="hero-prompt-input"
+            />
+            <button className="prompt-bar__btn" onClick={startPipeline} disabled={!topic.trim()} id="hero-generate-btn">
+              <Sparkles size={16} />
+              <span>Generate</span>
+            </button>
+          </div>
         </motion.div>
 
         {/* Error display */}
@@ -915,7 +911,7 @@ export default function Landing() {
       </section>
 
       <footer className="footer">
-        <p className="footer__text">© 2026 <span>Nexoryx</span> — Cinematic AI for the bold.</p>
+        <p className="footer__text">┬⌐ 2026 <span>Nexoryx</span> ΓÇö Cinematic AI for the bold.</p>
       </footer>
     </>
   )

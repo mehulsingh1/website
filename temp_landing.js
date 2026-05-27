@@ -9,7 +9,6 @@ import {
   MessageSquare, Video, Wand2, AlertTriangle,
   Plus, X
 } from 'lucide-react'
-import ModelSelector from '../components/ModelSelector'
 
 /* ────────────────────────────────────────────────────────
    STATUS MESSAGES SHOWN WHILE NEXORYX IS WORKING
@@ -62,7 +61,7 @@ const SHOWCASE_ITEMS = [
     prompt: 'Eating maggi fall into river,fighnting an shark,running away from it to the cliff',
     duration: '45s',
     model: 'Nexoryx Pro',
-    video: '/final.mp4',
+    video: '/new_generation.mp4',
   },
 ]
 
@@ -97,8 +96,6 @@ export default function Landing() {
   // Phases: idle | generating-script | review-script | generating-video | video-ready
   const [phase, setPhase] = useState('idle')
   const [storyTitle, setStoryTitle] = useState('')
-  const [selectedModel, setSelectedModel] = useState('grok-imagine-video')
-  const [jobId, setJobId] = useState(null)
 
   /* ---- Script data ---- */
   const [sceneData, setSceneData] = useState(null)
@@ -124,9 +121,9 @@ export default function Landing() {
   const chatContainerRef = useRef(null)
 
   /* ──────────────────────────────────────────────────────
-    PHASE 1: Generate Script (REAL API)
-    ────────────────────────────────────────────────────── */
-  const startPipeline = async () => {
+     PHASE 1: Generate Script (SIMULATED)
+     ────────────────────────────────────────────────────── */
+  const startPipeline = () => {
     if (!topic.trim() || phase !== 'idle') return
     setPhase('generating-script')
     setGenStep(0)
@@ -136,7 +133,6 @@ export default function Landing() {
     setSceneData(null)
     setIsEditing(false)
 
-    // Animate progress steps while API call is in flight
     let stepIdx = 0
     const stepTimer = setInterval(() => {
       stepIdx = Math.min(stepIdx + 1, SCRIPT_GEN_STEPS.length - 1)
@@ -145,39 +141,22 @@ export default function Landing() {
 
     let prog = 0
     const progTimer = setInterval(() => {
-      prog = Math.min(prog + 1, 90)
+      prog = Math.min(prog + 2, 100)
       setGenProgress(prog)
-    }, 100)
+    }, 60)
 
-    try {
-      const res = await fetch('/api/draft-script', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic }),
-      })
-      const data = await res.json()
-
+    setTimeout(() => {
       clearInterval(stepTimer)
       clearInterval(progTimer)
-
-      if (data.error) {
-        setScriptError(data.error)
-        setPhase('idle')
-        return
-      }
-
       setGenProgress(100)
-      setJobId(data.job_id)
-      setStoryTitle(topic)
-      setSceneData(data.scene_data)
-      setDisplayScript(data.display_script || '')
+      setStoryTitle('Shark River Survival')
+      const script = SIMULATED_SCRIPT
+      setSceneData(script)
+      const lines = [`🎨 Origin Frame\n${script.origin_image_prompt}\n`]
+      script.segments.forEach((s, i) => lines.push(`🎬 Scene ${i + 1}\n${s.video_prompt}\n`))
+      setDisplayScript(lines.join('\n---\n'))
       setTimeout(() => setPhase('review-script'), 400)
-    } catch (err) {
-      clearInterval(stepTimer)
-      clearInterval(progTimer)
-      setScriptError(err.message || 'Failed to connect to Nexoryx API')
-      setPhase('idle')
-    }
+    }, 4000)
   }
 
   const addConsoleMsg = (text, type = 'system', frameUrl = null) => {
@@ -185,7 +164,7 @@ export default function Landing() {
   }
 
   /* ──────────────────────────────────────────────────────
-     PHASE 3: Production Pipeline (REAL WebSocket)
+     PHASE 3: Production Pipeline (SIMULATED)
      ────────────────────────────────────────────────────── */
   const startVideoGeneration = useCallback(() => {
     if (!sceneData) return
@@ -199,68 +178,68 @@ export default function Landing() {
     setPipelineError(null)
     setCompletedFrames([])
 
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${wsProtocol}//${window.location.host}/api/ws/produce`
-    const ws = new WebSocket(wsUrl)
+    const timers = []
+    const totalSegments = sceneData.segments.length
+    let delay = 0
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({
-        job_id: jobId || 'live-' + Date.now(),
-        scene_data: sceneData,
-        model_id: selectedModel,
-      }))
-      addConsoleMsg('→ Connected to Nexoryx Pipeline Engine...', 'system')
-    }
+    // Initial messages
+    delay += 800
+    timers.push(setTimeout(() => addConsoleMsg('→ Connected to Nexoryx Pipeline Engine...', 'system'), delay))
+    delay += 1200
+    timers.push(setTimeout(() => addConsoleMsg('→ Script approved — sending to production...', 'system'), delay))
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
-      const progress = msg.progress || 0
-      setVideoProgress(progress)
+    // Origin image
+    delay += 1500
+    timers.push(setTimeout(() => {
+      setActiveStep('origin_image')
+      addConsoleMsg('▸ Generating origin anchor frame via Flux-Dev...', 'render')
+    }, delay))
+    delay += 4000
+    timers.push(setTimeout(() => {
+      setOriginImageUrl('/frame1.png')
+      setVideoProgress(10)
+      addConsoleMsg('  ✓ Origin frame generated', 'done', '/frame1.png')
+      setCompletedFrames(prev => [...prev, '/frame1.png'])
+    }, delay))
 
-      if (msg.step === 'origin_image') {
-        setActiveStep('origin_image')
-        if (msg.status === 'done') {
-          setOriginImageUrl(msg.image_url)
-          addConsoleMsg('  ✓ Origin frame generated', 'done', msg.image_url)
-          setCompletedFrames(prev => [...prev, msg.image_url])
-        } else {
-          addConsoleMsg('▸ Generating origin anchor frame...', 'render')
-        }
-      } else if (msg.step?.startsWith('scene_')) {
-        setActiveStep(msg.step)
-        if (msg.status === 'done') {
-          setSceneStatuses(prev => ({ ...prev, [msg.step]: { status: 'done', videoUrl: msg.video_url } }))
-          addConsoleMsg(`  ✓ ${msg.step.replace('_', ' ')} complete`, 'done')
-        } else if (msg.status === 'rendering') {
-          setSceneStatuses(prev => ({ ...prev, [msg.step]: { status: 'rendering' } }))
-          addConsoleMsg(`▸ ${msg.message}`, 'render')
-        }
-      } else if (msg.step === 'stitching') {
-        setActiveStep('stitching')
-        addConsoleMsg('▸ Stitching all scenes via ffmpeg...', 'render')
-      } else if (msg.step === 'final' && msg.status === 'done') {
-        setFinalVideoUrl(msg.video_url || msg.download_url)
-        addConsoleMsg('✦ Video ready — One-Take Complete!', 'final')
-        setTimeout(() => setPhase('video-ready'), 1500)
-      } else if (msg.step === 'error') {
-        setPipelineError(msg.message)
-        addConsoleMsg(`✗ ${msg.message}`, 'error')
-      } else if (msg.step === 'cooldown') {
-        addConsoleMsg(`⏳ ${msg.message}`, 'system')
-      }
-    }
+    // Scene segments
+    sceneData.segments.forEach((seg, i) => {
+      const sceneKey = `scene_${i + 1}`
+      const frameUrl = SCENE_FRAMES[i] || SCENE_FRAMES[0]
 
-    ws.onerror = () => {
-      setPipelineError('WebSocket connection failed. Is the backend running?')
-    }
+      delay += 2500
+      timers.push(setTimeout(() => {
+        setActiveStep(sceneKey)
+        setSceneStatuses(prev => ({ ...prev, [sceneKey]: { status: 'rendering' } }))
+        addConsoleMsg(`▸ Rendering Scene ${i + 1} — ${seg.video_prompt.substring(0, 50)}...`, 'render')
+      }, delay))
 
-    ws.onclose = () => {
-      // Normal close after pipeline completes
-    }
+      delay += 5000
+      timers.push(setTimeout(() => {
+        const pct = Math.round(10 + ((i + 1) / totalSegments) * 80)
+        setVideoProgress(pct)
+        setSceneStatuses(prev => ({ ...prev, [sceneKey]: { status: 'done', videoUrl: frameUrl } }))
+        addConsoleMsg(`  ✓ Scene ${i + 1} complete`, 'done', frameUrl)
+        setCompletedFrames(prev => [...prev, frameUrl])
+      }, delay))
+    })
 
-    // Store ref for cleanup
-    simTimersRef.current = [{ close: () => ws.close() }]
-  }, [sceneData, jobId, selectedModel])
+    // Final stitching
+    delay += 3000
+    timers.push(setTimeout(() => {
+      addConsoleMsg('▸ Stitching all scenes via ffmpeg...', 'render')
+      setActiveStep('stitching')
+    }, delay))
+    delay += 4000
+    timers.push(setTimeout(() => {
+      setVideoProgress(100)
+      setFinalVideoUrl('/new_generation.mp4')
+      addConsoleMsg('✦ Video ready — One-Take Complete!', 'final')
+      setTimeout(() => setPhase('video-ready'), 1500)
+    }, delay))
+
+    simTimersRef.current = timers
+  }, [sceneData])
 
   /* ---- Auto-scroll console ---- */
   useEffect(() => {
@@ -787,7 +766,7 @@ export default function Landing() {
               <span className="hero__badge-dot" />
               Now in Public Beta
             </div>
-            <button
+            <button 
               onClick={() => navigate('/history')}
               style={{
                 background: 'rgba(255, 255, 255, 0.03)',
@@ -830,28 +809,45 @@ export default function Landing() {
           </p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-          <motion.button
-            className="prompt-bar__btn"
-            onClick={() => navigate('/generate')}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            id="hero-start-generating-btn"
-            style={{
-              padding: '16px 48px',
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              borderRadius: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              cursor: 'pointer',
-            }}
-          >
-            <Sparkles size={20} />
-            <span>Start Generating</span>
-            <ArrowRight size={18} />
-          </motion.button>
+        <motion.div className="prompt-bar" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
+
+          {uploadedImage && (
+            <div className="prompt-bar__image-preview">
+              <div className="prompt-bar__image-preview-inner">
+                <img src={uploadedImage.url} alt="Uploaded" className="prompt-bar__image-preview-img" />
+                <button className="prompt-bar__image-preview-remove" onClick={removeUploadedImage}>
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="prompt-bar__wrapper">
+            <button className="prompt-bar__upload-btn" onClick={() => fileInputRef.current?.click()} title="Upload Image">
+              <Plus size={20} />
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
+            <input
+              className="prompt-bar__input"
+              type="text"
+              placeholder="Enter your topic... e.g. 'Cyberpunk Heist' or 'Nike Ad'"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && startPipeline()}
+              autoComplete="off"
+              id="hero-prompt-input"
+            />
+            <button className="prompt-bar__btn" onClick={startPipeline} disabled={!topic.trim()} id="hero-generate-btn">
+              <Sparkles size={16} />
+              <span>Generate</span>
+            </button>
+          </div>
         </motion.div>
 
         {/* Error display */}

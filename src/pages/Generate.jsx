@@ -279,7 +279,16 @@ export default function Generate() {
 
     SIM_CONSOLE_MSGS.forEach((msg) => {
       const t = setTimeout(() => {
-        addConsoleMsg(msg.text, msg.type, msg.step === 'origin_image_done' ? SCENE_FRAMES[0] : null)
+        let frameUrl = null
+        if (msg.step === 'origin_image_done') {
+          frameUrl = SCENE_FRAMES[0]
+        } else if (msg.step?.endsWith('_done')) {
+          const sceneNum = parseInt(msg.step.replace('scene_', '').replace('_done', ''))
+          if (sceneNum <= SCENE_FRAMES.length) {
+            frameUrl = SCENE_FRAMES[sceneNum - 1]
+          }
+        }
+        addConsoleMsg(msg.text, msg.type, frameUrl)
 
         if (msg.step === 'origin_image_start') {
           setActiveStep('origin_image')
@@ -482,28 +491,24 @@ export default function Generate() {
      ══════════════════════════════════════════════════════ */
   if (phase === 'generating-script') {
     return (
-      <div className="sm-page">
-        <div className="sm-container">
-          <div className="yai-overlay" style={{ position: 'relative', minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="yai-generating">
-              <motion.div className="yai-gen-icon" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}><Wand2 size={36} /></motion.div>
-              <div className="yai-gen-pulse" />
-              <motion.h2 className="yai-gen-title" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>Nexoryx is crafting your story</motion.h2>
-              <p className="yai-gen-topic"><Sparkles size={14} /> {prompt}</p>
-              <div className="yai-gen-progress">
-                <div className="yai-gen-progress__track">
-                  <motion.div className="yai-gen-progress__fill" animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} />
-                </div>
-                <span className="yai-gen-progress__pct">{progress}%</span>
-              </div>
-              <div className="yai-gen-steps">
-                <AnimatePresence mode="wait">
-                  <motion.p key={genStep} className="yai-gen-step" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3 }}>
-                    <Cpu size={14} /> {SCRIPT_GEN_STEPS[genStep]}
-                  </motion.p>
-                </AnimatePresence>
-              </div>
+      <div className="yai-overlay">
+        <div className="yai-generating">
+          <motion.div className="yai-gen-icon" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}><Wand2 size={36} /></motion.div>
+          <div className="yai-gen-pulse" />
+          <motion.h2 className="yai-gen-title" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>Nexoryx is drafting your cinematic script</motion.h2>
+          <p className="yai-gen-topic"><Sparkles size={14} /> {prompt}</p>
+          <div className="yai-gen-progress">
+            <div className="yai-gen-progress__track">
+              <motion.div className="yai-gen-progress__fill" animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} />
             </div>
+            <span className="yai-gen-progress__pct">{progress}%</span>
+          </div>
+          <div className="yai-gen-steps">
+            <AnimatePresence mode="wait">
+              <motion.p key={genStep} className="yai-gen-step" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3 }}>
+                <Cpu size={14} /> {SCRIPT_GEN_STEPS[genStep]}
+              </motion.p>
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -512,43 +517,41 @@ export default function Generate() {
 
   if (phase === 'review-script') {
     return (
-      <div className="sm-page">
-        <div className="sm-container--wide">
-          <div className="yai-review" style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
-            <div className="yai-review__header">
-              <button className="yai-back-btn" onClick={goBack}><ArrowLeft size={18} /><span>Back</span></button>
-              <div className="yai-review__badge"><Bot size={14} /><span>Nexoryx AI Story Script</span></div>
-              <button className="yai-new-btn" onClick={resetAll}><RotateCcw size={14} /><span>New Story</span></button>
-            </div>
-            <div className="yai-review__topic"><Sparkles size={16} /><h2>{storyTitle}</h2></div>
-            <div className="yai-review__content">
-              {isEditing ? (
-                <textarea ref={scriptRef} className="yai-review__editor" value={displayScript} onChange={(e) => setDisplayScript(e.target.value)} />
-              ) : (
-                <div className="yai-review__script">
-                  <h2 className="yai-script-h1">{storyTitle}</h2>
-                  <div className="yai-script-section"><h3 className="yai-script-h2">🎨 Origin Frame</h3><p className="yai-script-line">{sceneData?.origin_image_prompt}</p></div>
-                  <hr className="yai-script-divider" />
-                  {sceneData?.segments?.map((seg, i) => (
-                    <div key={i}><h3 className="yai-script-h2">🎬 Scene {i + 1} — Motion & Audio</h3><p className="yai-script-line">{seg.video_prompt}</p>{i < sceneData.segments.length - 1 && <hr className="yai-script-divider" />}</div>
-                  ))}
-                  <hr className="yai-script-divider" />
-                  <p className="yai-script-meta">Total Segments: {sceneData?.segments?.length}</p>
-                  <p className="yai-script-meta">Pipeline: Flux-Dev → Grok Imagine Video → ffmpeg stitch</p>
-                </div>
-              )}
-            </div>
-            <div className="yai-review__actions">
-              <button className={`yai-action-btn yai-action-btn--edit ${isEditing ? 'yai-action-btn--active' : ''}`} onClick={toggleEdit}>
-                {isEditing ? <CheckCircle2 size={18} /> : <Pencil size={18} />}<span>{isEditing ? 'Done Editing' : 'Edit Script'}</span>
-              </button>
-              <button className="yai-action-btn yai-action-btn--continue" onClick={startVideoGeneration}>
-                <Play size={18} /><span>Approve & Shoot</span><ArrowRight size={16} />
-              </button>
-              <button className="yai-action-btn yai-action-btn--auto" onClick={resetAll}>
-                <RotateCcw size={18} /><span>Discard & Rewrite</span>
-              </button>
-            </div>
+      <div className="yai-overlay">
+        <div className="yai-review">
+          <div className="yai-review__header">
+            <button className="yai-back-btn" onClick={goBack}><ArrowLeft size={18} /><span>Back</span></button>
+            <div className="yai-review__badge"><Bot size={14} /><span>Nexoryx AI Story Script</span></div>
+            <button className="yai-new-btn" onClick={resetAll}><RotateCcw size={14} /><span>New Story</span></button>
+          </div>
+          <div className="yai-review__topic"><Sparkles size={16} /><h2>{storyTitle}</h2></div>
+          <div className="yai-review__content">
+            {isEditing ? (
+              <textarea ref={scriptRef} className="yai-review__editor" value={displayScript} onChange={(e) => setDisplayScript(e.target.value)} />
+            ) : (
+              <div className="yai-review__script">
+                <h2 className="yai-script-h1">{storyTitle}</h2>
+                <div className="yai-script-section"><h3 className="yai-script-h2">🎨 Origin Frame</h3><p className="yai-script-line">{sceneData?.origin_image_prompt}</p></div>
+                <hr className="yai-script-divider" />
+                {sceneData?.segments?.map((seg, i) => (
+                  <div key={i}><h3 className="yai-script-h2">🎬 Scene {i + 1} — Motion & Audio</h3><p className="yai-script-line">{seg.video_prompt}</p>{i < sceneData.segments.length - 1 && <hr className="yai-script-divider" />}</div>
+                ))}
+                <hr className="yai-script-divider" />
+                <p className="yai-script-meta">Total Segments: {sceneData?.segments?.length}</p>
+                <p className="yai-script-meta">Pipeline: Flux-Dev → Grok Imagine Video → ffmpeg stitch</p>
+              </div>
+            )}
+          </div>
+          <div className="yai-review__actions">
+            <button className={`yai-action-btn yai-action-btn--edit ${isEditing ? 'yai-action-btn--active' : ''}`} onClick={toggleEdit}>
+              {isEditing ? <CheckCircle2 size={18} /> : <Pencil size={18} />}<span>{isEditing ? 'Done Editing' : 'Edit Script'}</span>
+            </button>
+            <button className="yai-action-btn yai-action-btn--continue" onClick={startVideoGeneration}>
+              <Play size={18} /><span>Approve & Shoot</span><ArrowRight size={16} />
+            </button>
+            <button className="yai-action-btn yai-action-btn--auto" onClick={resetAll}>
+              <RotateCcw size={18} /><span>Discard & Rewrite</span>
+            </button>
           </div>
         </div>
       </div>
@@ -561,78 +564,76 @@ export default function Generate() {
     const completedScenes = Object.values(sceneStatuses).filter(s => s.status === 'done').length
 
     return (
-      <div className="sm-page">
-        <div className="sm-container--wide">
-          <div className="yai-render" style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
-            <div className="yai-render__header">
-              <button className="yai-back-btn" onClick={goBack}><ArrowLeft size={18} /><span>Back</span></button>
-              <div className="yai-render__title-group"><Film size={16} /><h3>Nexoryx — Live Production Pipeline</h3></div>
-              <div className="yai-render__stats">
-                <span className="yai-render__scene-count">{completedScenes}/{totalScenes} scenes</span>
-                <div className="yai-render__pct-badge">
-                  {videoProgress < 100 ? <Loader2 size={14} className="spinning" /> : <CheckCircle2 size={14} />}
-                  <span>{videoProgress}%</span>
-                </div>
+      <div className="yai-overlay">
+        <div className="yai-render">
+          <div className="yai-render__header">
+            <button className="yai-back-btn" onClick={goBack}><ArrowLeft size={18} /><span>Back</span></button>
+            <div className="yai-render__title-group"><Film size={16} /><h3>Nexoryx — Live Production Pipeline</h3></div>
+            <div className="yai-render__stats">
+              <span className="yai-render__scene-count">{completedScenes}/{totalScenes} scenes</span>
+              <div className="yai-render__pct-badge">
+                {videoProgress < 100 ? <Loader2 size={14} className="spinning" /> : <CheckCircle2 size={14} />}
+                <span>{videoProgress}%</span>
               </div>
             </div>
-            <div className="yai-render__progress-bar"><motion.div className="yai-render__progress-fill" animate={{ width: `${videoProgress}%` }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} /></div>
-            {pipelineError && (
-              <div className="yai-render__error"><AlertTriangle size={16} /><span>{pipelineError}</span><button onClick={resetAll}>Reset</button></div>
-            )}
-            <div className="yai-render__body">
-              <div className="yai-render__scenes">
-                <div className="yai-render__scenes-header"><Sparkles size={14} /><span>{storyTitle}</span></div>
-                <div className={`yai-scene-card ${activeStep === 'origin_image' ? 'yai-scene-card--active' : ''} ${originImageUrl ? 'yai-scene-card--done' : ''}`}>
-                  <div className="yai-scene-card__top">
-                    <div className="yai-scene-card__number">{originImageUrl ? <CheckCircle2 size={14} /> : activeStep === 'origin_image' ? <Loader2 size={14} className="spinning" /> : <Film size={14} />}<span>Origin Frame</span></div>
-                    <span className="yai-scene-card__duration">Flux-Dev</span>
-                  </div>
-                  <h4 className="yai-scene-card__title">Anchor Image</h4>
-                  <p className="yai-scene-card__desc">{sceneData?.origin_image_prompt?.substring(0, 80)}...</p>
-                  <div className="yai-scene-card__meta"><span><Cpu size={10} /> AI Image Gen</span><span>{originImageUrl ? 'Complete' : activeStep === 'origin_image' ? 'Generating...' : 'Queued'}</span></div>
-                  {(activeStep === 'origin_image' || originImageUrl) && (
-                    <div className="yai-scene-card__bar"><motion.div className="yai-scene-card__bar-fill" animate={{ width: originImageUrl ? '100%' : '50%' }} transition={{ duration: 0.3 }} /></div>
-                  )}
+          </div>
+          <div className="yai-render__progress-bar"><motion.div className="yai-render__progress-fill" animate={{ width: `${videoProgress}%` }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} /></div>
+          {pipelineError && (
+            <div className="yai-render__error"><AlertTriangle size={16} /><span>{pipelineError}</span><button onClick={resetAll}>Reset</button></div>
+          )}
+          <div className="yai-render__body">
+            <div className="yai-render__scenes">
+              <div className="yai-render__scenes-header"><Sparkles size={14} /><span>{storyTitle}</span></div>
+              <div className={`yai-scene-card ${activeStep === 'origin_image' ? 'yai-scene-card--active' : ''} ${originImageUrl ? 'yai-scene-card--done' : ''}`}>
+                <div className="yai-scene-card__top">
+                  <div className="yai-scene-card__number">{originImageUrl ? <CheckCircle2 size={14} /> : activeStep === 'origin_image' ? <Loader2 size={14} className="spinning" /> : <Film size={14} />}<span>Origin Frame</span></div>
+                  <span className="yai-scene-card__duration">Flux-Dev</span>
                 </div>
-                <div className="yai-render__scene-grid">
-                  {segments.map((seg, i) => {
-                    const sceneKey = `scene_${i + 1}`
-                    const sceneStatus = sceneStatuses[sceneKey]
-                    const isActive = activeStep === sceneKey && sceneStatus?.status !== 'done'
-                    const isDone = sceneStatus?.status === 'done'
-                    const isPending = !sceneStatus
-                    return (
-                      <motion.div key={sceneKey} className={`yai-scene-card ${isActive ? 'yai-scene-card--active' : ''} ${isDone ? 'yai-scene-card--done' : ''}`} initial={{ opacity: 0.5, scale: 0.98 }} animate={{ opacity: isPending ? 0.4 : 1, scale: isActive ? 1.02 : 1 }} transition={{ duration: 0.3 }}>
-                        <div className="yai-scene-card__top">
-                          <div className="yai-scene-card__number">{isDone ? <CheckCircle2 size={14} /> : isActive ? <Loader2 size={14} className="spinning" /> : <Film size={14} />}<span>Scene {i + 1}</span></div>
-                          <span className="yai-scene-card__duration">Grok Video</span>
-                        </div>
-                        <h4 className="yai-scene-card__title">Segment {i + 1}</h4>
-                        <p className="yai-scene-card__desc">{seg.video_prompt.substring(0, 80)}...</p>
-                        <div className="yai-scene-card__meta"><span><Cpu size={10} /> xAI Grok</span><span>{isDone ? 'Complete' : isActive ? 'Rendering...' : 'Queued'}</span></div>
-                        {(isActive || isDone) && (
-                          <div className="yai-scene-card__bar"><motion.div className="yai-scene-card__bar-fill" animate={{ width: isDone ? '100%' : '50%' }} transition={{ duration: 0.3 }} /></div>
-                        )}
-                      </motion.div>
-                    )
-                  })}
-                </div>
+                <h4 className="yai-scene-card__title">Anchor Image</h4>
+                <p className="yai-scene-card__desc">{sceneData?.origin_image_prompt?.substring(0, 80)}...</p>
+                <div className="yai-scene-card__meta"><span><Cpu size={10} /> AI Image Gen</span><span>{originImageUrl ? 'Complete' : activeStep === 'origin_image' ? 'Generating...' : 'Queued'}</span></div>
+                {(activeStep === 'origin_image' || originImageUrl) && (
+                  <div className="yai-scene-card__bar"><motion.div className="yai-scene-card__bar-fill" animate={{ width: originImageUrl ? '100%' : '50%' }} transition={{ duration: 0.3 }} /></div>
+                )}
               </div>
-              <div className="yai-render__console">
-                <div className="yai-render__console-header"><div className="yai-console-dots"><span /><span /><span /></div><span className="yai-console-title">pipeline.log</span></div>
-                <div className="yai-render__console-body" ref={chatContainerRef}>
-                  <AnimatePresence>
-                    {consoleLog.map((msg) => (
-                      <motion.div key={msg.id} className={`yai-console-line yai-console-line--${msg.type}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}>
-                        <span className="yai-console-line__text">{msg.text}</span>
-                        {msg.frameUrl && (
-                          <motion.img src={msg.frameUrl} alt="Generated frame" className="yai-console-frame" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 80 }} transition={{ duration: 0.5, delay: 0.2 }} />
-                        )}
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  {videoProgress < 100 && (<div className="yai-console-cursor"><span className="yai-console-cursor__blink">▋</span></div>)}
-                </div>
+              <div className="yai-render__scene-grid">
+                {segments.map((seg, i) => {
+                  const sceneKey = `scene_${i + 1}`
+                  const sceneStatus = sceneStatuses[sceneKey]
+                  const isActive = activeStep === sceneKey && sceneStatus?.status !== 'done'
+                  const isDone = sceneStatus?.status === 'done'
+                  const isPending = !sceneStatus
+                  return (
+                    <motion.div key={sceneKey} className={`yai-scene-card ${isActive ? 'yai-scene-card--active' : ''} ${isDone ? 'yai-scene-card--done' : ''}`} initial={{ opacity: 0.5, scale: 0.98 }} animate={{ opacity: isPending ? 0.4 : 1, scale: isActive ? 1.02 : 1 }} transition={{ duration: 0.3 }}>
+                      <div className="yai-scene-card__top">
+                        <div className="yai-scene-card__number">{isDone ? <CheckCircle2 size={14} /> : isActive ? <Loader2 size={14} className="spinning" /> : <Film size={14} />}<span>Scene {i + 1}</span></div>
+                        <span className="yai-scene-card__duration">Grok Video</span>
+                      </div>
+                      <h4 className="yai-scene-card__title">Segment {i + 1}</h4>
+                      <p className="yai-scene-card__desc">{seg.video_prompt.substring(0, 80)}...</p>
+                      <div className="yai-scene-card__meta"><span><Cpu size={10} /> xAI Grok</span><span>{isDone ? 'Complete' : isActive ? 'Rendering...' : 'Queued'}</span></div>
+                      {(isActive || isDone) && (
+                        <div className="yai-scene-card__bar"><motion.div className="yai-scene-card__bar-fill" animate={{ width: isDone ? '100%' : '50%' }} transition={{ duration: 0.3 }} /></div>
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="yai-render__console">
+              <div className="yai-render__console-header"><div className="yai-console-dots"><span /><span /><span /></div><span className="yai-console-title">pipeline.log</span></div>
+              <div className="yai-render__console-body" ref={chatContainerRef}>
+                <AnimatePresence>
+                  {consoleLog.map((msg) => (
+                    <motion.div key={msg.id} className={`yai-console-line yai-console-line--${msg.type}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}>
+                      <span className="yai-console-line__text">{msg.text}</span>
+                      {msg.frameUrl && (
+                        <motion.img src={msg.frameUrl} alt="Generated frame" className="yai-console-frame" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 80 }} transition={{ duration: 0.5, delay: 0.2 }} />
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {videoProgress < 100 && (<div className="yai-console-cursor"><span className="yai-console-cursor__blink">▋</span></div>)}
               </div>
             </div>
           </div>
@@ -644,29 +645,27 @@ export default function Generate() {
   if (phase === 'video-ready') {
     const segments = sceneData?.segments || []
     return (
-      <div className="sm-page">
-        <div className="sm-container--wide">
-          <div className="yai-video-ready" style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
-            <div className="yai-video-ready__header">
-              <button className="yai-back-btn" onClick={goBack}><ArrowLeft size={18} /><span>Back to Script</span></button>
-              <div className="yai-video-ready__badge"><CheckCircle2 size={14} /><span>Video Complete</span></div>
-              <button className="yai-new-btn" onClick={resetAll}><RotateCcw size={14} /><span>New Story</span></button>
+      <div className="yai-overlay">
+        <div className="yai-video-ready">
+          <div className="yai-video-ready__header">
+            <button className="yai-back-btn" onClick={goBack}><ArrowLeft size={18} /><span>Back to Script</span></button>
+            <div className="yai-video-ready__badge"><CheckCircle2 size={14} /><span>Video Complete</span></div>
+            <button className="yai-new-btn" onClick={resetAll}><RotateCcw size={14} /><span>New Story</span></button>
+          </div>
+          <div className="yai-video-ready__player-wrap">
+            <div className="yai-video-ready__player" style={{ position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto', aspectRatio: '16/9', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+              <video src={finalVideoUrl} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <div className="yai-video-ready__overlay-badge"><Film size={12} /><span>AI Generated • Story Mode</span></div>
             </div>
-            <div className="yai-video-ready__player-wrap">
-              <div className="yai-video-ready__player" style={{ position: 'relative', width: '100%', maxWidth: '900px', margin: '0 auto', aspectRatio: '16/9', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-                <video src={finalVideoUrl} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                <div className="yai-video-ready__overlay-badge"><Film size={12} /><span>AI Generated • Story Mode</span></div>
-              </div>
-              <div className="yai-video-ready__info">
-                <h3 className="yai-video-ready__topic-name"><Sparkles size={16} /> {storyTitle}</h3>
-                <p className="yai-video-ready__stats">{segments.length} scenes • Generated by Nexoryx Story Pipeline</p>
-              </div>
+            <div className="yai-video-ready__info">
+              <h3 className="yai-video-ready__topic-name"><Sparkles size={16} /> {storyTitle}</h3>
+              <p className="yai-video-ready__stats">{segments.length} scenes • Generated by Nexoryx Story Pipeline</p>
             </div>
-            <div className="yai-video-ready__actions">
-              <a href={finalVideoUrl} download="nexoryx_story.mp4" className="yai-action-btn yai-action-btn--download"><Download size={18} /><span>Download</span></a>
-              <button className="yai-action-btn yai-action-btn--architect" onClick={() => navigate('/architect')}><Pencil size={18} /><span>Edit in Architect</span></button>
-              <button className="yai-action-btn yai-action-btn--new" onClick={resetAll}><RotateCcw size={18} /><span>New Story</span></button>
-            </div>
+          </div>
+          <div className="yai-video-ready__actions">
+            <a href={finalVideoUrl} download="nexoryx_story.mp4" className="yai-action-btn yai-action-btn--download"><Download size={18} /><span>Download</span></a>
+            <button className="yai-action-btn yai-action-btn--architect" onClick={() => navigate('/architect')}><Pencil size={18} /><span>Edit in Architect</span></button>
+            <button className="yai-action-btn yai-action-btn--new" onClick={resetAll}><RotateCcw size={18} /><span>New Story</span></button>
           </div>
         </div>
       </div>
