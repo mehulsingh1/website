@@ -59,10 +59,10 @@ const SHOWCASE_ITEMS = [
   },
   {
     id: 3,
-    prompt: 'Eating maggi fall into river,fighnting an shark,running away from it to the cliff',
+    prompt: 'When they met each other ',
     duration: '45s',
     model: 'Nexoryx Pro',
-    video: '/final.mp4',
+    video: '/Seedance.mp4',
   },
 ]
 

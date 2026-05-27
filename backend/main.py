@@ -503,8 +503,8 @@ async def produce_video(ws: WebSocket):
             "step": "final",
             "status": "done",
             "message": "Infinite One-Take Complete!",
-            "video_url": f"/api/files/{job_id}/nexoryx_final.mp4",
-            "download_url": f"/api/files/{job_id}/nexoryx_final.mp4",
+            "video_url": f"/api/files/{job_id}/nexoryx_Seedance.mp4",
+            "download_url": f"/api/files/{job_id}/nexoryx_Seedance.mp4",
         })
 
     except WebSocketDisconnect:

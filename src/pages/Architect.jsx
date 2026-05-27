@@ -14,7 +14,7 @@ import ModelSelector from '../components/ModelSelector'
 const MOCK_VIDEOS = [
   "/generation.mp4",
   "/generation1.mp4",
-  "/final.mp4",
+  "/Seedance.mp4",
 ]
 
 const CAMERA_OPTIONS = ['Drone Descent', 'Macro Tracking', 'Multi-angle', 'Steadicam Arc', 'Static', 'Dolly Push', 'Handheld', 'Crane Shot']
@@ -152,7 +152,7 @@ export default function Architect() {
   const handleRegenerate = async (id) => {
     setRegeneratingIds(prev => [...prev, id])
     const scene = scenes.find(s => s.id === id)
-    
+
     try {
       if (scene) {
         await fetch('/api/quick-generate', {
@@ -401,14 +401,14 @@ export default function Architect() {
                   <Wand2 size={12} /> Scene Prompt
                 </label>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <button 
+                  <button
                     className={`arch-chip ${selectedScene.promptMode !== 'image' ? 'arch-chip--active' : ''}`}
                     onClick={() => updateScene(selectedScene.id, { promptMode: 'text' })}
                     style={{ padding: '2px 8px', fontSize: 10 }}
                   >
                     Text
                   </button>
-                  <button 
+                  <button
                     className={`arch-chip ${selectedScene.promptMode === 'image' ? 'arch-chip--active' : ''}`}
                     onClick={() => updateScene(selectedScene.id, { promptMode: 'image' })}
                     style={{ padding: '2px 8px', fontSize: 10 }}
@@ -428,7 +428,7 @@ export default function Architect() {
                       </button>
                     </div>
                   ) : (
-                    <div 
+                    <div
                       onClick={() => document.getElementById('arch-file-upload').click()}
                       style={{ width: '100%', height: 60, border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#8b8d94', fontSize: 12 }}
                     >
