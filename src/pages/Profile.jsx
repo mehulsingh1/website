@@ -81,7 +81,7 @@ export default function Profile() {
             transition={{ delay: 0.1, duration: 0.6 }}
             className="profile-stat-card glass-panel"
           >
-            <div className="profile-stat-icon"><Film size={20} /></div>
+            <div className="profile-stat-icon"><Film size={48} strokeWidth={1.5} /></div>
             <div className="profile-stat-value">{user.videos_created}</div>
             <div className="profile-stat-label">Videos Created</div>
             <div className="profile-stat-sub">Across all projects</div>
@@ -93,7 +93,9 @@ export default function Profile() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="profile-stat-card glass-panel"
           >
-            <div className="profile-stat-icon"><Zap size={20} /></div>
+            <div className="profile-stat-icon">
+              <img src="/token.jpeg" alt="Token" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
+            </div>
             <div className="profile-stat-value">{user.tokens.toLocaleString()}</div>
             <div className="profile-stat-label">Tokens Left</div>
             <div className="profile-stat-sub">Resets next month</div>
@@ -105,7 +107,7 @@ export default function Profile() {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="profile-stat-card glass-panel"
           >
-            <div className="profile-stat-icon"><Clock size={20} /></div>
+            <div className="profile-stat-icon"><Clock size={48} strokeWidth={1.5} /></div>
             <div className="profile-stat-value">12.4h</div>
             <div className="profile-stat-label">Export Time</div>
             <div className="profile-stat-sub">Saved with AI</div>
