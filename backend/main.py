@@ -10,9 +10,11 @@ Endpoints:
   GET  /api/models                 -- List available video models
   POST /api/quick-generate         -- Single-video generation
   GET  /api/job/{job_id}/status    -- Poll quick-generate job status
-  POST /api/search-clips           -- Search Pexels/Pixabay stock clips
+  POST /api/search-clips           -- Search Pexels/Pixabay stock clips (API)
   POST /api/generate-voiceover     -- ElevenLabs TTS voiceover
   GET  /api/voices                 -- List ElevenLabs voices
+  POST /api/download-stock-clip    -- Proxy download stock clip
+  POST /api/generate-narration     -- AI narration script generator
   POST /api/export-clip-project    -- Stitch clips + voiceover
 """
 
@@ -936,46 +938,65 @@ async def job_status(job_id: str):
 
 
 # ═══════════════════════════════════════════════════════════
-# ENDPOINT — Search Stock Clips (Pexels + Pixabay)
+# ENDPOINT — Search Stock Clips (Pexels API + Pixabay)
 # ═══════════════════════════════════════════════════════════
 @app.post("/api/search-clips")
 async def search_clips(body: dict):
-    """Search Pexels and/or Pixabay for stock video clips."""
+    """Search Pexels and/or Pixabay for stock video clips via API."""
     query = body.get("query", "").strip()
     source = body.get("source", "pexels")  # pexels | pixabay | all
     per_page = min(body.get("per_page", 15), 30)
+    orientation = body.get("orientation", "")  # landscape | portrait | square
+    min_duration = body.get("min_duration", 0)  # minimum seconds
 
     if not query:
         return JSONResponse({"error": "Query is required"}, status_code=400)
 
     results = []
 
-    if source in ("pexels", "all") and PEXELS_API_KEY:
+    # ── Pexels API ──
+    if source in ("pexels", "all") and PEXELS_API_KEY and PEXELS_API_KEY != "your_pexels_key_here":
         try:
+            params = {"query": query, "per_page": per_page}
+            if orientation:
+                params["orientation"] = orientation
             r = requests.get(
                 "https://api.pexels.com/videos/search",
                 headers={"Authorization": PEXELS_API_KEY},
-                params={"query": query, "per_page": per_page},
+                params=params,
                 timeout=10,
             )
             if r.ok:
                 for v in r.json().get("videos", []):
                     files = v.get("video_files", [])
+                    # Get best quality + a preview quality
                     best = max(files, key=lambda f: f.get("width", 0)) if files else None
+                    preview_file = None
+                    for f in files:
+                        if f.get("quality") == "sd" or (f.get("width", 0) <= 640):
+                            preview_file = f
+                            break
+                    if not preview_file:
+                        preview_file = best
                     results.append({
                         "id": f"pexels-{v['id']}",
                         "source": "Pexels",
                         "thumbnail": v.get("image", ""),
+                        "preview_url": preview_file["link"] if preview_file else "",
                         "url": best["link"] if best else "",
                         "duration": v.get("duration", 0),
                         "width": best.get("width", 0) if best else 0,
                         "height": best.get("height", 0) if best else 0,
+                        "title": f"Pexels Video #{v['id']}",
                         "license": "Pexels License (Free)",
                     })
+            else:
+                print(f"[WARN] Pexels API returned {r.status_code}")
         except Exception as e:
-            print(f"[WARN] Pexels search failed: {e}")
+            print(f"[WARN] Pexels API search failed: {e}")
 
-    if source in ("pixabay", "all") and PIXABAY_API_KEY:
+    # ── Pixabay ──
+    if source in ("pixabay", "all") and PIXABAY_API_KEY and PIXABAY_API_KEY != "your_pixabay_key_here":
         try:
             r = requests.get(
                 "https://pixabay.com/api/videos/",
@@ -986,20 +1007,30 @@ async def search_clips(body: dict):
                 for v in r.json().get("hits", []):
                     vids = v.get("videos", {})
                     large = vids.get("large", {})
+                    small = vids.get("small", {})
                     results.append({
                         "id": f"pixabay-{v['id']}",
                         "source": "Pixabay",
                         "thumbnail": f"https://i.vimeocdn.com/video/{v['picture_id']}_640x360.jpg",
+                        "preview_url": small.get("url", large.get("url", "")),
                         "url": large.get("url", ""),
                         "duration": v.get("duration", 0),
                         "width": large.get("width", 0),
                         "height": large.get("height", 0),
+                        "title": f"Pixabay Video #{v['id']}",
                         "license": "Pixabay License (Free)",
                     })
         except Exception as e:
             print(f"[WARN] Pixabay search failed: {e}")
 
-    return {"clips": results, "total": len(results)}
+    # ── Filter by min_duration ──
+    if min_duration > 0:
+        results = [c for c in results if c.get("duration", 0) >= min_duration]
+
+    return {
+        "clips": results,
+        "total": len(results)
+    }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1127,6 +1158,84 @@ async def export_clip_project(body: dict):
             "job_id": job_id,
         }
 
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — Proxy Download Stock Clip (avoids CORS)
+# ═══════════════════════════════════════════════════════════
+@app.post("/api/download-stock-clip")
+async def download_stock_clip(body: dict):
+    """Proxy-download a stock video clip URL and serve it locally.
+    Avoids CORS issues when the frontend needs to preview/play clips.
+    """
+    clip_url = body.get("url", "").strip()
+    if not clip_url:
+        return JSONResponse({"error": "URL is required"}, status_code=400)
+
+    job_id = str(uuid.uuid4())[:8]
+    job_dir = STATIC_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    clip_path = str(job_dir / "preview_clip.mp4")
+
+    try:
+        data = await asyncio.to_thread(robust_download, clip_url, 60)
+        with open(clip_path, "wb") as f:
+            f.write(data)
+        return {
+            "local_url": f"/api/files/{job_id}/preview_clip.mp4",
+            "size_bytes": len(data),
+        }
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": f"Download failed: {str(e)}"}, status_code=500)
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT — AI Script Generator (for voiceover)
+# ═══════════════════════════════════════════════════════════
+@app.post("/api/generate-narration")
+async def generate_narration(body: dict):
+    """Use Groq LLM to auto-generate a voiceover narration script."""
+    topic = body.get("topic", "").strip()
+    tone = body.get("tone", "professional")  # professional | casual | dramatic | educational
+    duration_hint = body.get("duration", 30)
+
+    if not topic:
+        return JSONResponse({"error": "Topic is required"}, status_code=400)
+
+    narration_prompt = f"""Write a voiceover narration script for a faceless video about: "{topic}"
+
+Tone: {tone}
+Target duration: approximately {duration_hint} seconds of spoken audio.
+
+Rules:
+- Write ONLY the narration text, no stage directions or brackets.
+- Make it engaging and suitable for a faceless YouTube/TikTok/Instagram video.
+- Use short, punchy sentences for impact.
+- Keep it natural and conversational.
+- Do NOT include any formatting, just plain spoken text.
+
+Return ONLY the narration script, nothing else."""
+
+    try:
+        llm = ChatGroq(temperature=0.7, model_name="llama-3.3-70b-versatile")
+        chain = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert scriptwriter for faceless social media videos. Write engaging narration scripts."),
+            ("human", "{prompt}")
+        ]) | llm
+
+        response = await asyncio.to_thread(chain.invoke, {"prompt": narration_prompt})
+        script_text = response.content.strip()
+
+        return {
+            "script": script_text,
+            "topic": topic,
+            "tone": tone,
+            "estimated_words": len(script_text.split()),
+        }
     except Exception as e:
         traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
