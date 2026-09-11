@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build output
+dist/
+
+# Environment & Secrets — NEVER COMMIT
+backend/.env
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+backend/__pycache__/
+
+# Core pipeline IP — not for public
+idea2.py
+patch.py
+patch-grid.py
+webathon_gen.jsx
+temp_landing.js
+temp_webathon_arch.jsx
+temp_webathon_landing.jsx
+
+# Large media assets
+*.mp4
+*.png
+public/*.mp4
+public/*.png
+public/*.jpeg
+nexoryx_generation.mp4
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+New folder/
