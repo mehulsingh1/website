@@ -31,14 +31,14 @@ const SCRIPT_GEN_STEPS = [
 const SIMULATED_SCRIPTS = {
   default: {
     title: '',
-    origin_image_prompt: 'A sweeping aerial shot of a futuristic cityscape at twilight, neon lights reflecting off rain-slicked streets, towering holographic billboards casting colored light, cinematic wide angle, moody atmosphere.',
+    origin_image_prompt: 'Cinematic establishing shot — a young man in a plaid flannel shirt sits on a rocky riverbank, peacefully eating a bowl of Maggie noodles. The river glimmers behind him in golden afternoon light. Camera slowly pushes in from overhead. Photorealistic, dramatic natural lighting.',
     segments: [
-      { video_prompt: 'Slow cinematic drone descent through the rain — camera weaves between gleaming skyscrapers, neon signs flicker in Japanese and English. Puddles on the rooftop reflect the purple sky. Ambient synth score builds.' },
-      { video_prompt: 'Street-level tracking shot — a lone figure in a dark coat walks through the neon-lit alley. Steam rises from grates. Holographic advertisements dance on wet surfaces. The camera follows from behind, slow and deliberate.' },
-      { video_prompt: 'Interior shot — the figure enters a dimly lit underground bar. Warm amber lighting contrasts the cold blue outside. Patrons sit in shadowed booths. A jazz-electronic fusion plays softly. Camera pushes in to a close-up of their face.' },
-      { video_prompt: 'Quick montage — hands typing on a holographic keyboard, data streams flowing across transparent screens, eyes scanning rapidly. The tension builds as alarms begin to flash red. Percussive electronic beats accelerate.' },
-      { video_prompt: 'Action sequence — the figure bursts through a glass door onto a rain-soaked rooftop. Drones with searchlights converge. They sprint and leap across buildings. Camera tracks in dynamic handheld style. Orchestral score peaks.' },
-      { video_prompt: 'Final wide shot — the figure stands at the edge of the tallest building, city sprawling below. Rain stops. First light of dawn breaks through clouds. They look back once, then step into a beam of light. Score resolves to silence.' },
+      { video_prompt: 'Close-up on the man happily slurping Maggie noodles at the river edge — steam rises from the bowl. He leans forward to look at his reflection in the water. The camera tilts slowly, river ripples distorting his image. A sense of calm before chaos. Golden-hour cinematic color grade.' },
+      { video_prompt: 'Sudden mid-air tumble — the man slips on the mossy rocks, the bowl of Maggie goes flying in slow motion. His arms flail dramatically as he plummets toward the dark rushing river below. Rocky cliff face behind him, camera tracking his fall in handheld panic style. Dramatic score sting.' },
+      { video_prompt: 'Underwater shock — the man sinks into the dark murky river water, bubbles erupting all around. He opens his eyes and freezes — a massive great white shark turns directly toward him, ancient black eyes locking onto his. Inches away. Extreme close-up on the shark\'s open jaws filled with jagged teeth. Dead silence, then a deep bass pulse.' },
+      { video_prompt: 'Explosive underwater fight — the man summons every ounce of courage and throws a desperate punch at the shark\'s snout. Water erupts in violent white foam and bubbles. The shark thrashes wildly. Underwater camera spins in chaos. Adrenaline-charged orchestral score peaks. The man\'s knuckles meet the beast head-on.' },
+      { video_prompt: 'Desperate escape — the man claws his way through the water toward the riverbank. The massive shark lunges from behind, jaws wide open, crashing through the shallows in an explosion of spray. The man\'s soaking hand grabs the muddy bank. Shark\'s teeth miss by inches. Dynamic camera push from behind. Maximum tension.' },
+      { video_prompt: 'Survival — the man collapses face-down on the cracked muddy bank, gasping and trembling, completely drenched. He slowly lifts his head and looks back — the shark\'s dark fin circles silently in the water. He stares at it, eyes wide, heart pounding. Close-up on his face: wet, dirty, and barely alive. Silence. Then a slow exhale. Cut to black.' },
     ],
   },
 }
@@ -50,24 +50,24 @@ const SCENE_FRAMES = [
 
 const SIM_CONSOLE_MSGS = [
   { text: '→ Connected to Nexoryx Pipeline Engine...', type: 'system', delay: 0 },
-  { text: '▸ Initializing Flux-Dev image model...', type: 'render', delay: 800 },
-  { text: '▸ Generating origin anchor frame...', type: 'render', delay: 1500, step: 'origin_image_start' },
-  { text: '  ✓ Origin frame generated', type: 'done', delay: 4000, step: 'origin_image_done' },
-  { text: '▸ Loading Grok Imagine Video pipeline...', type: 'render', delay: 5000 },
-  { text: '▸ Rendering scene 1 — establishing shot...', type: 'render', delay: 6000, step: 'scene_1_start' },
-  { text: '  ✓ scene 1 complete', type: 'done', delay: 9000, step: 'scene_1_done' },
-  { text: '▸ Rendering scene 2 — character introduction...', type: 'render', delay: 10000, step: 'scene_2_start' },
-  { text: '  ✓ scene 2 complete', type: 'done', delay: 13000, step: 'scene_2_done' },
-  { text: '▸ Rendering scene 3 — rising tension...', type: 'render', delay: 14000, step: 'scene_3_start' },
-  { text: '  ✓ scene 3 complete', type: 'done', delay: 17000, step: 'scene_3_done' },
-  { text: '▸ Rendering scene 4 — the conflict...', type: 'render', delay: 18000, step: 'scene_4_start' },
-  { text: '  ✓ scene 4 complete', type: 'done', delay: 21000, step: 'scene_4_done' },
-  { text: '▸ Rendering scene 5 — climax...', type: 'render', delay: 22000, step: 'scene_5_start' },
-  { text: '  ✓ scene 5 complete', type: 'done', delay: 25000, step: 'scene_5_done' },
-  { text: '▸ Rendering scene 6 — resolution...', type: 'render', delay: 26000, step: 'scene_6_start' },
-  { text: '  ✓ scene 6 complete', type: 'done', delay: 29000, step: 'scene_6_done' },
-  { text: '▸ Stitching all scenes via ffmpeg...', type: 'render', delay: 30000, step: 'stitching' },
-  { text: '✦ Video ready — One-Take Complete!', type: 'final', delay: 33000, step: 'final' },
+  { text: '▸ Initializing Nexoryx Image model...', type: 'render', delay: 800 },
+  { text: '▸ Generating origin frame — river scene with Maggie...', type: 'render', delay: 1500, step: 'origin_image_start' },
+  { text: '  ✓ Origin frame generated — man at riverbank eating noodles', type: 'done', delay: 4000, step: 'origin_image_done' },
+  { text: '▸ Loading Nexoryx Video pipeline...', type: 'render', delay: 5000 },
+  { text: '▸ Rendering scene 1 — peaceful Maggie moment at the river...', type: 'render', delay: 6000, step: 'scene_1_start' },
+  { text: '  ✓ Scene 1 complete — noodles, steam, calm before chaos', type: 'done', delay: 9000, step: 'scene_1_done' },
+  { text: '▸ Rendering scene 2 — the slip, the fall, the chaos...', type: 'render', delay: 10000, step: 'scene_2_start' },
+  { text: '  ✓ Scene 2 complete — man tumbling into the dark river', type: 'done', delay: 13000, step: 'scene_2_done' },
+  { text: '▸ Rendering scene 3 — underwater face-off with the shark...', type: 'render', delay: 14000, step: 'scene_3_start' },
+  { text: '  ✓ Scene 3 complete — eye to eye with the beast', type: 'done', delay: 17000, step: 'scene_3_done' },
+  { text: '▸ Rendering scene 4 — the fight: man vs shark...', type: 'render', delay: 18000, step: 'scene_4_start' },
+  { text: '  ✓ Scene 4 complete — punching the shark underwater', type: 'done', delay: 21000, step: 'scene_4_done' },
+  { text: '▸ Rendering scene 5 — desperate escape from the jaws...', type: 'render', delay: 22000, step: 'scene_5_start' },
+  { text: '  ✓ Scene 5 complete — clawing out of river as shark lunges', type: 'done', delay: 25000, step: 'scene_5_done' },
+  { text: '▸ Rendering scene 6 — survivor collapses on the bank...', type: 'render', delay: 26000, step: 'scene_6_start' },
+  { text: '  ✓ Scene 6 complete — alive, barely, staring at the shark', type: 'done', delay: 29000, step: 'scene_6_done' },
+  { text: '▸ Stitching all 6 scenes via ffmpeg...', type: 'render', delay: 30000, step: 'stitching' },
+  { text: '✦ Epic story complete — One-Take Maggie Madness!', type: 'final', delay: 33000, step: 'final' },
 ]
 
 export default function Generate() {
@@ -82,6 +82,7 @@ export default function Generate() {
   const [uploadedFiles, setUploadedFiles] = useState([])
   const modeDropdownRef = useRef(null)
   const fileInputRef = useRef(null)
+  const promptInputRef = useRef(null)
 
   // Normal Mode State
   const [duration, setDuration] = useState(5)
@@ -128,6 +129,14 @@ export default function Generate() {
   const [completedFrames, setCompletedFrames] = useState([])
   const simTimersRef = useRef([])
   const chatContainerRef = useRef(null)
+
+  // Auto-grow the prompt textarea to fit content instead of leaving dead space
+  useEffect(() => {
+    const el = promptInputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 60), 240)}px`
+  }, [prompt, activeMode])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -234,16 +243,17 @@ export default function Generate() {
       clearInterval(stepTimer)
       clearInterval(progTimer)
 
+      const simTitle = 'Shark Water Survival'
       const sim = SIMULATED_SCRIPTS.default
-      const script = { ...sim, title: prompt }
-      let scriptText = `# ${prompt}\n\n`
+      const script = { ...sim, title: simTitle }
+      let scriptText = `# ${simTitle}\n\n`
       scriptText += `## 🎨 Origin Frame\n${script.origin_image_prompt}\n\n`
       script.segments.forEach((seg, i) => {
         scriptText += `## 🎬 Scene ${i + 1}\n${seg.video_prompt}\n\n`
       })
 
       setProgress(100)
-      setStoryTitle(prompt)
+      setStoryTitle(simTitle)
       setSceneData(script)
       setDisplayScript(scriptText)
       setTimeout(() => setPhase('review-script'), 500)
@@ -310,7 +320,7 @@ export default function Generate() {
         } else if (msg.step === 'final') {
           setVideoProgress(100)
           clearInterval(progTimer)
-          setFinalVideoUrl('/generation.mp4')
+          setFinalVideoUrl('/nexoryx_generation.mp4')
           setTimeout(() => setPhase('video-ready'), 1500)
         }
       }, msg.delay)
@@ -538,7 +548,7 @@ export default function Generate() {
                 ))}
                 <hr className="yai-script-divider" />
                 <p className="yai-script-meta">Total Segments: {sceneData?.segments?.length}</p>
-                <p className="yai-script-meta">Pipeline: Flux-Dev → Grok Imagine Video → ffmpeg stitch</p>
+                <p className="yai-script-meta">Pipeline: Nexoryx Image → Nexoryx Video → ffmpeg stitch</p>
               </div>
             )}
           </div>
@@ -587,11 +597,11 @@ export default function Generate() {
               <div className={`yai-scene-card ${activeStep === 'origin_image' ? 'yai-scene-card--active' : ''} ${originImageUrl ? 'yai-scene-card--done' : ''}`}>
                 <div className="yai-scene-card__top">
                   <div className="yai-scene-card__number">{originImageUrl ? <CheckCircle2 size={14} /> : activeStep === 'origin_image' ? <Loader2 size={14} className="spinning" /> : <Film size={14} />}<span>Origin Frame</span></div>
-                  <span className="yai-scene-card__duration">Flux-Dev</span>
+                  <span className="yai-scene-card__duration">Image</span>
                 </div>
                 <h4 className="yai-scene-card__title">Anchor Image</h4>
                 <p className="yai-scene-card__desc">{sceneData?.origin_image_prompt?.substring(0, 80)}...</p>
-                <div className="yai-scene-card__meta"><span><Cpu size={10} /> AI Image Gen</span><span>{originImageUrl ? 'Complete' : activeStep === 'origin_image' ? 'Generating...' : 'Queued'}</span></div>
+                <div className="yai-scene-card__meta"><span><Cpu size={10} /> Nexoryx AI</span><span>{originImageUrl ? 'Complete' : activeStep === 'origin_image' ? 'Generating...' : 'Queued'}</span></div>
                 {(activeStep === 'origin_image' || originImageUrl) && (
                   <div className="yai-scene-card__bar"><motion.div className="yai-scene-card__bar-fill" animate={{ width: originImageUrl ? '100%' : '50%' }} transition={{ duration: 0.3 }} /></div>
                 )}
@@ -607,11 +617,11 @@ export default function Generate() {
                     <motion.div key={sceneKey} className={`yai-scene-card ${isActive ? 'yai-scene-card--active' : ''} ${isDone ? 'yai-scene-card--done' : ''}`} initial={{ opacity: 0.5, scale: 0.98 }} animate={{ opacity: isPending ? 0.4 : 1, scale: isActive ? 1.02 : 1 }} transition={{ duration: 0.3 }}>
                       <div className="yai-scene-card__top">
                         <div className="yai-scene-card__number">{isDone ? <CheckCircle2 size={14} /> : isActive ? <Loader2 size={14} className="spinning" /> : <Film size={14} />}<span>Scene {i + 1}</span></div>
-                        <span className="yai-scene-card__duration">Grok Video</span>
+                        <span className="yai-scene-card__duration">Nexoryx Video</span>
                       </div>
-                      <h4 className="yai-scene-card__title">Segment {i + 1}</h4>
+                      <h4 className="yai-scene-card__title">{['Maggie at River', 'The Fall', 'Shark Encounter', 'The Fight', 'Desperate Escape', 'Survived'][i] || `Scene ${i + 1}`}</h4>
                       <p className="yai-scene-card__desc">{seg.video_prompt.substring(0, 80)}...</p>
-                      <div className="yai-scene-card__meta"><span><Cpu size={10} /> xAI Grok</span><span>{isDone ? 'Complete' : isActive ? 'Rendering...' : 'Queued'}</span></div>
+                      <div className="yai-scene-card__meta"><span><Cpu size={10} /> Nexoryx AI</span><span>{isDone ? 'Complete' : isActive ? 'Rendering...' : 'Queued'}</span></div>
                       {(isActive || isDone) && (
                         <div className="yai-scene-card__bar"><motion.div className="yai-scene-card__bar-fill" animate={{ width: isDone ? '100%' : '50%' }} transition={{ duration: 0.3 }} /></div>
                       )}
@@ -676,44 +686,19 @@ export default function Generate() {
      RENDER: IDLE — Main Generation Form (Shared)
      ══════════════════════════════════════════════════════ */
   return (
-    <div className="qs-page" style={{ position: 'relative', overflow: 'hidden' }} data-mode={activeMode}>
-      {/* Resonating Background Video */}
-      <video
-        src="/generation.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          minWidth: '100vw',
-          minHeight: '100vh',
-          objectFit: 'cover',
-          opacity: 0.15,
-          filter: 'blur(60px) saturate(1.5)',
-          zIndex: 0,
-          pointerEvents: 'none'
-        }}
-      />
-      
-      <div className="qs-container" style={{ position: 'relative', zIndex: 1 }}>
+    <div className="qs-page" data-mode={activeMode}>
+      <div className="qs-container">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
 
           {/* Header */}
           <div className="qs-header">
-            <div 
-              className="qs-header__badge"
-              style={activeMode === 'story' ? { color: '#fcd34d', borderColor: 'rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.15)', boxShadow: '0 0 15px rgba(245, 158, 11, 0.2)' } : {}}
-            >
+            <div className="qs-header__badge">
               {activeMode === 'story' ? <BookOpen size={14} /> : <Sparkles size={14} />}
               {activeMode === 'story' ? 'STORY BOARD (PRO)' : 'QUICK GENERATE'}
             </div>
             <h1 className="qs-header__title">
               {activeMode === 'story' ? (
-                <span style={{ background: 'linear-gradient(135deg, #fef08a, #f59e0b, #d97706)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}>
+                <span className="qs-header__title--story">
                   Epic Story. Watch it Unfold.
                 </span>
               ) : (
@@ -779,13 +764,14 @@ export default function Generate() {
                 />
               </div>
               <textarea
+                ref={promptInputRef}
                 className="qs-prompt__input"
                 placeholder={activeMode === 'story'
                   ? "Enter your story topic... e.g. 'A heist in neon Tokyo' or 'Time traveler's last day'"
                   : "Describe your video... e.g. 'A golden retriever running through a field of sunflowers at sunset'"}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                rows={3}
+                rows={1}
                 id="qs-prompt-input"
               />
               <div className="qs-mode-toggle" ref={modeDropdownRef}>
@@ -855,42 +841,45 @@ export default function Generate() {
             </div>
           </div>
 
-          {/* Controls Row */}
-          <div className="qs-controls">
-            <div className="qs-control-group">
-              <label className="qs-control-label"><Clock size={12} /> Duration</label>
-              <div className="qs-pills">
-                {allowedDurations.map(d => (
-                  <button key={d} className={`qs-pill ${duration === d ? 'qs-pill--active' : ''}`} onClick={() => setDuration(d)}>{d}s</button>
-                ))}
+          {/* Controls Row — Normal Mode only */}
+          {activeMode === 'normal' && (
+            <div className="qs-controls">
+              <div className="qs-control-group">
+                <label className="qs-control-label"><Clock size={12} /> Duration</label>
+                <div className="qs-pills">
+                  {allowedDurations.map(d => (
+                    <button key={d} className={`qs-pill ${duration === d ? 'qs-pill--active' : ''}`} onClick={() => setDuration(d)}>{d}s</button>
+                  ))}
+                </div>
+              </div>
+              <div className="qs-control-group">
+                <label className="qs-control-label"><Wand2 size={12} /> Style</label>
+                <div className="qs-pills">
+                  {STYLES.map(s => (
+                    <button key={s} className={`qs-pill ${style === s ? 'qs-pill--active' : ''}`} onClick={() => setStyle(s)}>{s}</button>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="qs-control-group">
-              <label className="qs-control-label"><Wand2 size={12} /> Style</label>
-              <div className="qs-pills">
-                {STYLES.map(s => (
-                  <button key={s} className={`qs-pill ${style === s ? 'qs-pill--active' : ''}`} onClick={() => setStyle(s)}>{s}</button>
-                ))}
-              </div>
-            </div>
-          </div>
+          )}
 
-          {/* Model Selector */}
-          <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="full" />
+          {/* Model Selector — Normal Mode only */}
+          {activeMode === 'normal' && (
+            <ModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} mode="full" />
+          )}
+
 
           {/* Generate Button */}
-          <motion.button
+          <button
             className="qs-generate-btn"
             onClick={activeMode === 'story' ? startStoryPipeline : startGeneration}
             disabled={!prompt.trim()}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
             id="qs-generate-btn"
           >
-            {activeMode === 'story' ? <BookOpen size={18} /> : <Sparkles size={18} />}
-            <span>{activeMode === 'story' ? 'Start Story Pipeline' : 'Generate Video'}</span>
+            <Sparkles size={18} />
+            <span>{activeMode === 'story' ? 'Launch Story Pipeline' : 'Generate Video'}</span>
             <ArrowRight size={16} />
-          </motion.button>
+          </button>
 
         </motion.div>
       </div>

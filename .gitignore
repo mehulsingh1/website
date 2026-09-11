@@ -1,2 +1,16 @@
-
 dist/
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+backend/static/
+backend/.env
+.env
+*.mp4
+*.png
+Frame 1.png
+Frame 2.png
+Frame 3.png
+Frame 4.png
+Frame 5.png
+Frame 6.png
